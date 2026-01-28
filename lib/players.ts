@@ -1,14 +1,12 @@
 /**
- * Player data type for the NBA Salary Model
+ * Fallback player data for the NBA Salary Model
+ *
+ * This hardcoded data is used when Deno KV is empty or unavailable.
+ * In normal operation, the app fetches data from KV instead.
  */
-export interface Player {
-  name: string;
-  team: string;
-  age: number;
-  darko: number;
-  actualSalary: number;
-  futureSalaries: Record<string, number>;
-}
+import type { Player } from "./types.ts";
+
+export type { Player };
 
 export const PLAYER_DATA: Player[] = [
 { name: "Nikola Jokic", team: "DEN", age: 30, darko: 6.75, actualSalary: 55.2, futureSalaries: { "2026-27": 59.03, "2027-28": 62.84 } },

@@ -4,8 +4,10 @@
     "check": "deno fmt --check . && deno lint . && deno check",
     "dev": "vite",
     "build": "vite build",
-    "start": "deno serve -A _fresh/server.js",
-    "update": "deno run -A -r jsr:@fresh/update ."
+    "start": "deno serve -A --unstable-kv _fresh/server.js",
+    "update": "deno run -A -r jsr:@fresh/update .",
+    "seed": "deno run -A --unstable-kv scripts/seed-kv.ts",
+    "check-kv": "deno run -A --unstable-kv scripts/check-kv.ts"
   },
   "lint": {
     "rules": {
@@ -32,7 +34,8 @@
       "dom",
       "dom.asynciterable",
       "dom.iterable",
-      "deno.ns"
+      "deno.ns",
+      "deno.unstable"
     ],
     "jsx": "precompile",
     "jsxImportSource": "preact",

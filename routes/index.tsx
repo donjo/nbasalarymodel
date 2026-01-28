@@ -1,32 +1,41 @@
 import AppTabs from "../islands/AppTabs.tsx";
-import { PLAYER_DATA } from "../lib/players.ts";
+import { getPlayers } from "../lib/players-data.ts";
 
 // Featured players for the empty state (diverse examples showing different valuations)
 const FEATURED_PLAYER_NAMES = [
-  "Nikola Jokic",         // MVP-caliber, high surplus
+  "Nikola Jokic", // MVP-caliber, high surplus
   "Shai Gilgeous-Alexander", // Elite player, great value
-  "Victor Wembanyama",    // Young star on rookie deal
-  "Chet Holmgren",        // Young star, excellent surplus
-  "LeBron James",         // Veteran max contract
-  "Stephen Curry",        // Aging star, interesting valuation
+  "Victor Wembanyama", // Young star on rookie deal
+  "Chet Holmgren", // Young star, excellent surplus
+  "LeBron James", // Veteran max contract
+  "Stephen Curry", // Aging star, interesting valuation
 ];
 
 // Featured teams for the empty state (diverse examples with positive and negative surplus)
 const FEATURED_TEAM_CODES = [
-  "OKC",  // Oklahoma City Thunder - Well-run, young core (positive)
-  "SAS",  // San Antonio Spurs - Rebuilding with Wemby (positive)
-  "HOU",  // Houston Rockets - Young team developing (positive)
-  "GSW",  // Golden State Warriors - Aging stars, big contracts (negative)
-  "SAC",  // Sacramento Kings - Overpaying veterans (negative)
-  "LAL",  // Los Angeles Lakers - Veteran heavy (negative)
+  "OKC", // Oklahoma City Thunder - Well-run, young core (positive)
+  "SAS", // San Antonio Spurs - Rebuilding with Wemby (positive)
+  "HOU", // Houston Rockets - Young team developing (positive)
+  "GSW", // Golden State Warriors - Aging stars, big contracts (negative)
+  "SAC", // Sacramento Kings - Overpaying veterans (negative)
+  "LAL", // Los Angeles Lakers - Veteran heavy (negative)
 ];
 
-// Get featured players from the player data
-const featuredPlayers = PLAYER_DATA.filter((p) =>
-  FEATURED_PLAYER_NAMES.includes(p.name)
-);
+/**
+ * Home page component (async server component)
+ *
+ * Fresh 2.x supports async components that fetch data server-side.
+ * This runs on the server and the result is sent as HTML to the client.
+ */
+export default async function Home() {
+  // Fetch players from KV (falls back to hardcoded data if KV is empty)
+  const { players, metadata } = await getPlayers();
 
-export default function Home() {
+  // Get featured players from the player data
+  const featuredPlayers = players.filter((p) =>
+    FEATURED_PLAYER_NAMES.includes(p.name)
+  );
+
   return (
     <div class="app-container">
       {/* Header */}
@@ -51,7 +60,7 @@ export default function Home() {
           >
             DARKO
           </a>
-          {" · "}Updated 1/21/26{" · "}
+          {" · "}Updated {metadata.lastUpdated}{" · "}
           <a
             href="https://github.com/StephenNoh/nbasalarymodel/blob/main/README.md"
             target="_blank"
@@ -65,7 +74,7 @@ export default function Home() {
 
       {/* Interactive App with Tab Navigation */}
       <AppTabs
-        players={PLAYER_DATA}
+        players={players}
         featuredPlayers={featuredPlayers}
         featuredTeamCodes={FEATURED_TEAM_CODES}
       />
