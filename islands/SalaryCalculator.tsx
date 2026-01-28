@@ -13,14 +13,12 @@ import {
   FUTURE_YEARS,
 } from "../lib/salary.ts";
 
-interface Comparison {
+interface PlayerCard {
   id: number;
-  selectedPlayer: Player | null;
+  player: Player;
   games: number;
   minutes: number;
   improvement: number;
-  searchTerm: string;
-  showDropdown: boolean;
 }
 
 interface Props {
@@ -28,211 +26,173 @@ interface Props {
 }
 
 export default function SalaryCalculator({ players }: Props) {
-  const [comparisons, setComparisons] = useState<Comparison[]>([
-    {
-      id: 1,
-      selectedPlayer: null,
-      games: 70,
-      minutes: 30,
-      improvement: 0,
-      searchTerm: "",
-      showDropdown: false,
-    },
-  ]);
+  // Global search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  const addComparison = () => {
-    setComparisons([
-      ...comparisons,
-      {
-        id: Date.now(),
-        selectedPlayer: null,
-        games: 70,
-        minutes: 30,
-        improvement: 0,
-        searchTerm: "",
-        showDropdown: false,
-      },
-    ]);
-  };
+  // Player cards (only for added players)
+  const [playerCards, setPlayerCards] = useState<PlayerCard[]>([]);
 
-  const removeComparison = (id: number) => {
-    if (comparisons.length > 1) {
-      setComparisons(comparisons.filter((c) => c.id !== id));
-    }
-  };
-
-  const updateComparison = (
-    id: number,
-    field: keyof Comparison,
-    value: unknown
-  ) => {
-    setComparisons(
-      comparisons.map((c) => (c.id === id ? { ...c, [field]: value } : c))
-    );
-  };
-
-  const updateMultipleFields = (
-    id: number,
-    updates: Partial<Comparison>
-  ) => {
-    setComparisons(
-      comparisons.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
-  };
-
-  const selectPlayer = (id: number, player: Player) => {
-    setComparisons(
-      comparisons.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              selectedPlayer: player,
-              searchTerm: player.name,
-              showDropdown: false,
-            }
-          : c
-      )
-    );
-  };
-
-  const getFilteredPlayers = (searchTerm: string): Player[] => {
-    if (!searchTerm) return [];
+  const getFilteredPlayers = (term: string): Player[] => {
+    if (!term) return [];
+    // Filter out players that are already added
+    const addedNames = new Set(playerCards.map((c) => c.player.name));
     return players
-      .filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(term.toLowerCase()) &&
+          !addedNames.has(p.name)
+      )
       .slice(0, 10);
   };
 
+  const addPlayer = (player: Player) => {
+    setPlayerCards([
+      ...playerCards,
+      {
+        id: Date.now(),
+        player,
+        games: 70,
+        minutes: 30,
+        improvement: 0,
+      },
+    ]);
+    setSearchTerm("");
+    setShowDropdown(false);
+  };
+
+  const removePlayer = (id: number) => {
+    setPlayerCards(playerCards.filter((c) => c.id !== id));
+  };
+
+  const updatePlayerCard = (
+    id: number,
+    field: keyof Omit<PlayerCard, "id" | "player">,
+    value: number
+  ) => {
+    setPlayerCards(
+      playerCards.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+    );
+  };
+
+  const filteredPlayers = getFilteredPlayers(searchTerm);
+
   return (
     <>
-      <div class="player-grid">
-        {comparisons.map((comp, index) => (
-          <PlayerCard
-            key={comp.id}
-            comp={comp}
-            index={index}
-            showRemove={comparisons.length > 1}
-            onRemove={() => removeComparison(comp.id)}
-            onUpdate={(field, value) => updateComparison(comp.id, field, value)}
-            onUpdateMultiple={(updates) => updateMultipleFields(comp.id, updates)}
-            onSelectPlayer={(player) => selectPlayer(comp.id, player)}
-            getFilteredPlayers={getFilteredPlayers}
-          />
-        ))}
+      {/* Global Search Box */}
+      <div class="search-section">
+        <div class="search-container">
+          <label class="search-label">Search Players</label>
+          <div class="search-input-wrapper">
+            <input
+              type="text"
+              value={searchTerm}
+              onInput={(e) => {
+                setSearchTerm((e.target as HTMLInputElement).value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Search for a player to add..."
+              class="search-input"
+            />
+            <div class="search-icon">
+              <SearchIcon size={18} />
+            </div>
+          </div>
+
+          {showDropdown && searchTerm && (
+            <div class="dropdown">
+              {filteredPlayers.map((player) => (
+                <div key={player.name} class="dropdown-item-with-button">
+                  <div class="dropdown-item-info">
+                    <div class="dropdown-item-name">{player.name}</div>
+                    <div class="dropdown-item-stat">
+                      DARKO: {player.darko.toFixed(2)} · {player.team}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => addPlayer(player)}
+                    class="dropdown-add-btn"
+                  >
+                    <PlusIcon size={16} />
+                    Add
+                  </button>
+                </div>
+              ))}
+              {filteredPlayers.length === 0 && (
+                <div class="dropdown-empty">
+                  {playerCards.some((c) =>
+                    c.player.name.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                    ? "Player already added"
+                    : "No players found"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={{ marginTop: "2rem", textAlign: "center" }}>
-        <button onClick={addComparison} class="add-player-btn">
-          <PlusIcon size={20} />
-          ADD PLAYER
-        </button>
-      </div>
+      {/* Player Cards */}
+      {playerCards.length > 0 && (
+        <div class="player-grid">
+          {playerCards.map((card) => (
+            <PlayerCardComponent
+              key={card.id}
+              card={card}
+              onRemove={() => removePlayer(card.id)}
+              onUpdate={(field, value) => updatePlayerCard(card.id, field, value)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {playerCards.length === 0 && (
+        <div class="empty-state">
+          <p>Search for players above to start comparing salaries</p>
+        </div>
+      )}
     </>
   );
 }
 
-interface PlayerCardProps {
-  comp: Comparison;
-  index: number;
-  showRemove: boolean;
+interface PlayerCardComponentProps {
+  card: PlayerCard;
   onRemove: () => void;
-  onUpdate: (field: keyof Comparison, value: unknown) => void;
-  onUpdateMultiple: (updates: Partial<Comparison>) => void;
-  onSelectPlayer: (player: Player) => void;
-  getFilteredPlayers: (searchTerm: string) => Player[];
+  onUpdate: (field: keyof Omit<PlayerCard, "id" | "player">, value: number) => void;
 }
 
-function PlayerCard({
-  comp,
-  index,
-  showRemove,
+function PlayerCardComponent({
+  card,
   onRemove,
   onUpdate,
-  onUpdateMultiple,
-  onSelectPlayer,
-  getFilteredPlayers,
-}: PlayerCardProps) {
+}: PlayerCardComponentProps) {
+  const player = card.player;
+
   return (
     <div class="player-card">
       <div class="player-card-header">
-        <h2 class="player-card-title">PLAYER {index + 1}</h2>
-        {showRemove && (
-          <button onClick={onRemove} class="remove-btn">
-            <TrashIcon size={16} />
-          </button>
-        )}
+        <h2 class="player-card-title">{player.name}</h2>
+        <button onClick={onRemove} class="remove-btn">
+          <TrashIcon size={16} />
+        </button>
       </div>
 
-      <div class="search-container">
-        <label class="search-label">Player Name</label>
-        <div class="search-input-wrapper">
-          <input
-            type="text"
-            value={comp.searchTerm}
-            onInput={(e) => {
-              const target = e.target as HTMLInputElement;
-              onUpdateMultiple({
-                searchTerm: target.value,
-                showDropdown: true,
-                selectedPlayer: null,
-              });
-            }}
-            onFocus={() => onUpdate("showDropdown", true)}
-            placeholder="Search for a player..."
-            class="search-input"
-          />
-          <div class="search-icon">
-            <SearchIcon size={18} />
-          </div>
-        </div>
-
-        {comp.showDropdown && comp.searchTerm && !comp.selectedPlayer && (
-          <div class="dropdown">
-            {getFilteredPlayers(comp.searchTerm).map((player) => (
-              <button
-                key={player.name}
-                onClick={() => onSelectPlayer(player)}
-                class="dropdown-item"
-              >
-                <div class="dropdown-item-name">{player.name}</div>
-                <div class="dropdown-item-stat">
-                  DARKO: {player.darko.toFixed(2)} · {player.team}
-                </div>
-              </button>
-            ))}
-            {getFilteredPlayers(comp.searchTerm).length === 0 && (
-              <div class="dropdown-empty">No players found</div>
-            )}
-          </div>
-        )}
+      <div class="player-card-meta">
+        {player.team} · Age {player.age}
       </div>
 
-      {comp.selectedPlayer && (
-        <PlayerDetails comp={comp} onUpdate={onUpdate} />
-      )}
-    </div>
-  );
-}
-
-interface PlayerDetailsProps {
-  comp: Comparison;
-  onUpdate: (field: keyof Comparison, value: unknown) => void;
-}
-
-function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
-  const player = comp.selectedPlayer!;
-
-  return (
-    <>
       <div class="slider-group">
         <div class="slider-label">
           <span>Games Played</span>
-          <span class="slider-value">{comp.games}</span>
+          <span class="slider-value">{card.games}</span>
         </div>
         <input
           type="range"
           min="1"
           max="82"
-          value={comp.games}
+          value={card.games}
           onInput={(e) =>
             onUpdate("games", parseInt((e.target as HTMLInputElement).value))
           }
@@ -243,13 +203,13 @@ function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
       <div class="slider-group">
         <div class="slider-label">
           <span>Minutes Per Game</span>
-          <span class="slider-value">{comp.minutes}</span>
+          <span class="slider-value">{card.minutes}</span>
         </div>
         <input
           type="range"
           min="0"
           max="48"
-          value={comp.minutes}
+          value={card.minutes}
           onInput={(e) =>
             onUpdate("minutes", parseInt((e.target as HTMLInputElement).value))
           }
@@ -261,8 +221,8 @@ function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
         <div class="slider-label">
           <span>DARKO Adjustment</span>
           <span class="slider-value">
-            {comp.improvement > 0 ? "+" : ""}
-            {comp.improvement.toFixed(1)}
+            {card.improvement > 0 ? "+" : ""}
+            {card.improvement.toFixed(1)}
           </span>
         </div>
         <input
@@ -270,7 +230,7 @@ function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
           min="-5"
           max="5"
           step="0.1"
-          value={comp.improvement}
+          value={card.improvement}
           onInput={(e) =>
             onUpdate(
               "improvement",
@@ -290,31 +250,31 @@ function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
           <div class="darko-row">
             <span class="darko-label">Adjusted DARKO</span>
             <span class="darko-value" style={{ color: "#60a5fa" }}>
-              {(player.darko + comp.improvement).toFixed(1)}
+              {(player.darko + card.improvement).toFixed(1)}
               <span class="darko-tier">
-                ({getDarkoLabel(player.darko + comp.improvement)})
+                ({getDarkoLabel(player.darko + card.improvement)})
               </span>
             </span>
           </div>
         </div>
       </div>
 
-      <ResultsPanel comp={comp} />
-    </>
+      <ResultsPanel card={card} />
+    </div>
   );
 }
 
 interface ResultsPanelProps {
-  comp: Comparison;
+  card: PlayerCard;
 }
 
-function ResultsPanel({ comp }: ResultsPanelProps) {
-  const player = comp.selectedPlayer!;
+function ResultsPanel({ card }: ResultsPanelProps) {
+  const player = card.player;
   const projected = calculateSalary(
-    comp.games,
-    comp.minutes,
+    card.games,
+    card.minutes,
     player.darko,
-    comp.improvement
+    card.improvement
   );
   const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
 
@@ -335,10 +295,10 @@ function ResultsPanel({ comp }: ResultsPanelProps) {
     }
 
     const currentProjectedDarko =
-      player.darko + comp.improvement + cumulativeDelta;
+      player.darko + card.improvement + cumulativeDelta;
     const rawMarketValue = calculateSalary(
-      comp.games,
-      comp.minutes,
+      card.games,
+      card.minutes,
       currentProjectedDarko,
       0
     );
@@ -372,8 +332,6 @@ function ResultsPanel({ comp }: ResultsPanelProps) {
 
   return (
     <div class="results-panel">
-      <div class="results-player-name">{player.name}</div>
-
       <div class="results-main">
         <div class="result-block">
           <div class="result-label">Projected Value '25-26</div>

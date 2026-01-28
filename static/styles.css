@@ -112,7 +112,7 @@ body::before {
   background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
   border: 1px solid var(--border-subtle);
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 2rem 2rem 1rem 2rem;
   margin-bottom: 2rem;
   position: relative;
   overflow: hidden;
@@ -188,9 +188,10 @@ body::before {
 
 .player-card-title {
   font-family: var(--font-display);
-  font-size: 1.125rem;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .remove-btn {
@@ -212,10 +213,19 @@ body::before {
   color: var(--bg-primary);
 }
 
+/* Search section (global search box) */
+.search-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
 /* Search input */
 .search-container {
   position: relative;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
 }
 
 .search-label {
@@ -314,6 +324,70 @@ body::before {
   color: var(--text-muted);
   text-align: center;
   font-size: 0.875rem;
+}
+
+/* Dropdown item with add button */
+.dropdown-item-with-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+}
+
+.dropdown-item-with-button:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item-with-button:hover {
+  background: var(--nba-blue-glow);
+}
+
+.dropdown-item-info {
+  flex: 1;
+}
+
+.dropdown-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--nba-red);
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-add-btn:hover {
+  background: var(--nba-red-light);
+  transform: scale(1.02);
+}
+
+/* Player card meta info */
+.player-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-muted);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
 }
 
 /* Sliders */
