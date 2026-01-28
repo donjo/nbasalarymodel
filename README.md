@@ -1,4 +1,9 @@
 # nbasalarymodel
+
+> Originally created by [Stephen Noh](https://github.com/StephenNoh/nbasalarymodel). This is a personal fork with modifications.
+>
+> These are his original readme notes below.
+
 This is a salary model that I built for NBA players that projects current year salary + salary five years into the future. Here is a methodology of how it works. 
 
 The main basis for how to build this model came from Chapter 7 of Seth Partnow's excellent book, The Midrange Theory. Seth outlines the process whereby you pick your favorite adjusted plus-minus metric, multiply by possessions and cost of average win, and come out with a contract valuation. 
