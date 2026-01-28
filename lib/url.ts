@@ -22,7 +22,7 @@ export const DEFAULT_IMPROVEMENT = 0;
 
 // Full app state that can be encoded/decoded
 export interface AppState {
-  activeTab: "player" | "team";
+  activeTab: "player" | "team" | "leaderboard";
   playerSelections: Map<string, PlayerSettings>;
   teamCodes: Set<string>;
   teamPlayerSettings: Map<string, PlayerSettings>;
@@ -82,12 +82,18 @@ function decodePlayerSettings(
 
 /**
  * Convert app state to URL search params string
+ * Note: Leaderboard tab doesn't include player/team params since it's a standalone view
  */
 export function encodeStateToURL(state: AppState): string {
   const params = new URLSearchParams();
 
   // Always include tab
   params.set("tab", state.activeTab);
+
+  // Skip player/team params for leaderboard since it's a standalone view
+  if (state.activeTab === "leaderboard") {
+    return params.toString();
+  }
 
   // Encode player selections (only if there are any)
   if (state.playerSelections.size > 0) {
@@ -127,7 +133,7 @@ export function decodeURLToState(search: string): Partial<AppState> {
 
   // Parse tab
   const tab = params.get("tab");
-  if (tab === "player" || tab === "team") {
+  if (tab === "player" || tab === "team" || tab === "leaderboard") {
     result.activeTab = tab;
   }
 

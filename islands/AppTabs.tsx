@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "preact/hooks";
 import { SearchIcon, PlusIcon } from "../components/Icons.tsx";
 import SalaryCalculator from "./SalaryCalculator.tsx";
 import TeamsComparison from "./TeamsComparison.tsx";
+import Leaderboard from "./Leaderboard.tsx";
 import type { Player } from "../lib/players.ts";
 import { getTeamFullName, getUniqueTeamCodes } from "../lib/teams.ts";
 import {
@@ -29,7 +30,7 @@ export default function AppTabs({
   featuredTeamCodes,
 }: Props) {
   // Tab state - default to player view
-  const [activeTab, setActiveTab] = useState<"player" | "team">("player");
+  const [activeTab, setActiveTab] = useState<"player" | "team" | "leaderboard">("player");
 
   // Search state (unified for both tabs)
   const [searchTerm, setSearchTerm] = useState("");
@@ -235,9 +236,20 @@ export default function AppTabs({
             >
               Team
             </button>
+            <button
+              class={`tab-button ${activeTab === "leaderboard" ? "tab-button-active" : ""}`}
+              onClick={() => {
+                setActiveTab("leaderboard");
+                setSearchTerm("");
+                setShowDropdown(false);
+              }}
+            >
+              Leaderboard
+            </button>
           </div>
 
-          {/* Search Box */}
+          {/* Search Box - hidden on leaderboard tab */}
+          {activeTab !== "leaderboard" && (
           <div class="nav-search-container">
             <div class="search-input-wrapper">
               <input
@@ -315,11 +327,12 @@ export default function AppTabs({
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
       {/* Content based on active tab */}
-      {activeTab === "player" ? (
+      {activeTab === "player" && (
         <SalaryCalculator
           players={players}
           featuredPlayers={featuredPlayers}
@@ -328,7 +341,8 @@ export default function AppTabs({
           onPlayerRemoved={handlePlayerRemoved}
           onPlayerSettingsChange={handlePlayerSettingsChange}
         />
-      ) : (
+      )}
+      {activeTab === "team" && (
         <TeamsComparison
           players={players}
           featuredTeamCodes={featuredTeamCodes}
@@ -338,6 +352,9 @@ export default function AppTabs({
           teamPlayerSettings={teamPlayerSettings}
           onTeamPlayerSettingsChange={handleTeamPlayerSettingsChange}
         />
+      )}
+      {activeTab === "leaderboard" && (
+        <Leaderboard players={players} />
       )}
     </>
   );
