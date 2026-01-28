@@ -735,3 +735,181 @@ body::before {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
 }
+
+/* Team Comparison Styles */
+
+/* Team summary with payroll, value, and surplus */
+.team-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.team-stat {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.625rem;
+  text-align: center;
+}
+
+.team-stat-label {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.team-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.team-stat-value-blue {
+  color: #60a5fa;
+}
+
+/* Roster section */
+.roster-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.roster-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.roster-header span:not(:first-child) {
+  text-align: right;
+  min-width: 55px;
+}
+
+/* Sortable header buttons */
+.roster-header-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 0;
+  text-align: right;
+  min-width: 55px;
+  transition: color 0.15s ease;
+  font-family: var(--font-body);
+}
+
+.roster-header-btn:hover {
+  color: var(--text-secondary);
+}
+
+.roster-header-btn.active {
+  color: #60a5fa;
+}
+
+.roster-table {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.roster-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.roster-row:hover {
+  background: var(--nba-blue-glow);
+}
+
+.roster-row-expanded {
+  background: var(--nba-blue-glow);
+  border-bottom-color: transparent;
+}
+
+.roster-player-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.roster-player-clickable {
+  color: #60a5fa;
+  transition: color 0.15s ease;
+}
+
+.roster-player-clickable:hover {
+  color: var(--text-primary);
+}
+
+.roster-salary {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  min-width: 55px;
+}
+
+.roster-value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: right;
+  min-width: 55px;
+}
+
+.roster-surplus {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: right;
+  min-width: 55px;
+}
+
+.roster-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Expanded player view */
+.expanded-player-view {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 1rem;
+}
+
+.expanded-player-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}

@@ -38,6 +38,10 @@ export default function Home() {
           >
             Methodology
           </a>
+          {" · "}
+          <a href="/teams" class="app-link">
+            Team Comparison
+          </a>
         </p>
       </header>
 
