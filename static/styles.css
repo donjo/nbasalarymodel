@@ -13,6 +13,7 @@
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1a6;
   --text-muted: #6e6e73;
+  --text-on-accent: #ffffff;
 
   /* NBA Brand Colors */
   --nba-blue: #17408B;
@@ -29,6 +30,13 @@
   --accent-secondary-glow: var(--nba-blue-glow);
   --accent-green: #34d399;
   --accent-red: #f87171;
+
+  /* Surplus colors (aliases for semantic clarity) */
+  --surplus-positive: #4ade80;
+  --surplus-negative: #f87171;
+
+  /* Value highlight blue */
+  --value-blue: #60a5fa;
 
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.06);
@@ -153,7 +161,7 @@ body::before {
 }
 
 .app-link {
-  color: #60a5fa;
+  color: var(--value-blue);
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -330,7 +338,7 @@ body::before {
 .dropdown-item-stat {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .dropdown-empty {
@@ -367,7 +375,7 @@ body::before {
   align-items: center;
   gap: 0.375rem;
   background: var(--nba-red);
-  color: #ffffff;
+  color: var(--text-on-accent);
   border: none;
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
@@ -429,7 +437,7 @@ body::before {
 .slider-value {
   font-family: var(--font-mono);
   font-weight: 600;
-  color: #60a5fa;
+  color: var(--value-blue);
   font-size: 0.875rem;
 }
 
@@ -554,7 +562,7 @@ body::before {
 }
 
 .result-value-projected {
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .result-value-actual {
@@ -569,11 +577,11 @@ body::before {
 }
 
 .surplus-positive {
-  color: var(--accent-green);
+  color: var(--surplus-positive);
 }
 
 .surplus-negative {
-  color: var(--accent-red);
+  color: var(--surplus-negative);
 }
 
 /* Multi-year projections */
@@ -646,7 +654,7 @@ body::before {
   font-family: var(--font-mono);
   font-weight: 600;
   text-align: right;
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .projection-actual {
@@ -692,7 +700,7 @@ body::before {
   align-items: center;
   gap: 0.5rem;
   background: linear-gradient(135deg, var(--nba-red), var(--nba-red-light));
-  color: #ffffff;
+  color: var(--text-on-accent);
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
@@ -773,7 +781,15 @@ body::before {
 }
 
 .team-stat-value-blue {
-  color: #60a5fa;
+  color: var(--value-blue);
+}
+
+.team-stat-value.surplus-positive {
+  color: var(--surplus-positive);
+}
+
+.team-stat-value.surplus-negative {
+  color: var(--surplus-negative);
 }
 
 /* Roster section */
@@ -825,12 +841,10 @@ body::before {
 }
 
 .roster-header-btn.active {
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .roster-table {
-  max-height: 600px;
-  overflow-y: auto;
 }
 
 .roster-row {
@@ -860,7 +874,7 @@ body::before {
 }
 
 .roster-player-clickable {
-  color: #60a5fa;
+  color: var(--value-blue);
   transition: color 0.15s ease;
 }
 
@@ -883,7 +897,7 @@ body::before {
 }
 
 .roster-player-settings-modified {
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .roster-salary {
@@ -993,13 +1007,13 @@ body::before {
 .tab-button-active {
   background: linear-gradient(135deg, var(--nba-red), var(--nba-red-light));
   border-color: transparent;
-  color: #ffffff;
+  color: var(--text-on-accent);
   box-shadow: 0 4px 16px rgba(201, 8, 42, 0.3);
 }
 
 .tab-button-active:hover {
   border-color: transparent;
-  color: #ffffff;
+  color: var(--text-on-accent);
 }
 
 /* Featured Section (empty state) */
@@ -1068,7 +1082,7 @@ body::before {
   align-items: center;
   gap: 0.25rem;
   background: var(--nba-red);
-  color: #ffffff;
+  color: var(--text-on-accent);
   border: none;
   padding: 0.375rem 0.625rem;
   border-radius: 0.375rem;
@@ -1137,7 +1151,7 @@ body::before {
 }
 
 .preview-stat-value-blue {
-  color: #60a5fa;
+  color: var(--value-blue);
 }
 
 .preview-stat-surplus {
