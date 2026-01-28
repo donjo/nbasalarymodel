@@ -1,5 +1,9 @@
 {
   "nodeModulesDir": "manual",
+  "deploy": {
+    "org": "donjo",
+    "app": "nbasalarymodel"
+  },
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
     "dev": "vite",
