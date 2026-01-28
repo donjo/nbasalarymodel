@@ -867,6 +867,24 @@ body::before {
   color: var(--text-primary);
 }
 
+.roster-arrow {
+  font-size: 0.5rem;
+  margin-right: 0.25rem;
+  display: inline-block;
+  width: 0.6rem;
+}
+
+.roster-player-settings {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+.roster-player-settings-modified {
+  color: #60a5fa;
+}
+
 .roster-salary {
   font-family: var(--font-mono);
   font-size: 0.8rem;

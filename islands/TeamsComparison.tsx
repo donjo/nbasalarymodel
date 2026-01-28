@@ -22,14 +22,25 @@ interface Props {
 const DEFAULT_GAMES = 70;
 const DEFAULT_MINUTES = 30;
 
+// Player settings for custom games/minutes/improvement
+interface PlayerSettings {
+  games: number;
+  minutes: number;
+  improvement: number;
+}
+
 // Format salary as currency (e.g., "$25.5M")
 function formatSalary(salary: number): string {
   return `$${salary.toFixed(1)}M`;
 }
 
 // Calculate a player's projected contract value using the salary model
-function getProjectedValue(player: Player): number {
-  const result = calculateSalary(DEFAULT_GAMES, DEFAULT_MINUTES, player.darko, 0);
+function getProjectedValue(player: Player, settings?: PlayerSettings): number {
+  const games = settings?.games ?? DEFAULT_GAMES;
+  const minutes = settings?.minutes ?? DEFAULT_MINUTES;
+  const improvement = settings?.improvement ?? 0;
+
+  const result = calculateSalary(games, minutes, player.darko, improvement);
   // "Minimum Salary" returns as a string, treat as ~2M for calculation purposes
   if (result === "Minimum Salary") return 2.0;
   return parseFloat(result);
@@ -191,14 +202,37 @@ function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
   // Track which player is expanded (null = none)
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
-  // Calculate total projected value and surplus for the team
-  const totalValue = roster.reduce((sum, player) => sum + getProjectedValue(player), 0);
+  // Track custom settings per player (keyed by player name)
+  const [playerSettings, setPlayerSettings] = useState<Record<string, PlayerSettings>>({});
+
+  // Get settings for a player (returns defaults if not customized)
+  const getSettings = (playerName: string): PlayerSettings => {
+    return playerSettings[playerName] || {
+      games: DEFAULT_GAMES,
+      minutes: DEFAULT_MINUTES,
+      improvement: 0,
+    };
+  };
+
+  // Update settings for a player
+  const updateSettings = (playerName: string, newSettings: PlayerSettings) => {
+    setPlayerSettings((prev) => ({
+      ...prev,
+      [playerName]: newSettings,
+    }));
+  };
+
+  // Calculate total projected value and surplus for the team (using custom settings)
+  const totalValue = roster.reduce(
+    (sum, player) => sum + getProjectedValue(player, getSettings(player.name)),
+    0
+  );
   const totalSurplus = totalValue - totalPayroll;
 
-  // Sort the roster based on current sort field
+  // Sort the roster based on current sort field (using custom settings)
   const sortedRoster = [...roster].sort((a, b) => {
-    const aValue = getProjectedValue(a);
-    const bValue = getProjectedValue(b);
+    const aValue = getProjectedValue(a, getSettings(a.name));
+    const bValue = getProjectedValue(b, getSettings(b.name));
     const aSurplus = aValue - a.actualSalary;
     const bSurplus = bValue - b.actualSalary;
 
@@ -272,7 +306,8 @@ function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
         </div>
         <div class="roster-table">
           {sortedRoster.map((player) => {
-            const projectedValue = getProjectedValue(player);
+            const settings = getSettings(player.name);
+            const projectedValue = getProjectedValue(player, settings);
             const surplus = projectedValue - player.actualSalary;
             const isPositive = surplus >= 0;
             const isExpanded = expandedPlayer === player.name;
@@ -284,7 +319,10 @@ function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
                   onClick={() => togglePlayer(player.name)}
                 >
                   <span class="roster-player-name roster-player-clickable">
-                    {isExpanded ? "▼" : "▶"} {player.name}
+                    <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span> {player.name}
+                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== DEFAULT_MINUTES ? "roster-player-settings-modified" : ""}`}>
+                      G — {settings.games} · MP — {settings.minutes}
+                    </span>
                   </span>
                   <span class="roster-salary">{formatSalary(player.actualSalary)}</span>
                   <span class={`roster-value ${isPositive ? "surplus-positive" : "surplus-negative"}`}>
@@ -295,7 +333,11 @@ function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
                   </span>
                 </div>
                 {isExpanded && (
-                  <ExpandedPlayerView player={player} />
+                  <ExpandedPlayerView
+                    player={player}
+                    settings={settings}
+                    onSettingsChange={(newSettings) => updateSettings(player.name, newSettings)}
+                  />
                 )}
               </div>
             );
@@ -312,13 +354,17 @@ function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
 // Expanded player view with sliders and multi-year projections
 interface ExpandedPlayerViewProps {
   player: Player;
+  settings: PlayerSettings;
+  onSettingsChange: (settings: PlayerSettings) => void;
 }
 
-function ExpandedPlayerView({ player }: ExpandedPlayerViewProps) {
-  // Local state for sliders (start with team comparison defaults)
-  const [games, setGames] = useState(DEFAULT_GAMES);
-  const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
-  const [improvement, setImprovement] = useState(0);
+function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlayerViewProps) {
+  const { games, minutes, improvement } = settings;
+
+  // Helper to update a single setting
+  const updateSetting = (key: keyof PlayerSettings, value: number) => {
+    onSettingsChange({ ...settings, [key]: value });
+  };
 
   // Calculate projected value with current slider values
   const projected = calculateSalary(games, minutes, player.darko, improvement);
@@ -385,7 +431,7 @@ function ExpandedPlayerView({ player }: ExpandedPlayerViewProps) {
           min="1"
           max="82"
           value={games}
-          onInput={(e) => setGames(parseInt((e.target as HTMLInputElement).value))}
+          onInput={(e) => updateSetting("games", parseInt((e.target as HTMLInputElement).value))}
           class="slider"
         />
       </div>
@@ -400,7 +446,7 @@ function ExpandedPlayerView({ player }: ExpandedPlayerViewProps) {
           min="0"
           max="48"
           value={minutes}
-          onInput={(e) => setMinutes(parseInt((e.target as HTMLInputElement).value))}
+          onInput={(e) => updateSetting("minutes", parseInt((e.target as HTMLInputElement).value))}
           class="slider"
         />
       </div>
@@ -418,7 +464,7 @@ function ExpandedPlayerView({ player }: ExpandedPlayerViewProps) {
           max="5"
           step="0.1"
           value={improvement}
-          onInput={(e) => setImprovement(parseFloat((e.target as HTMLInputElement).value))}
+          onInput={(e) => updateSetting("improvement", parseFloat((e.target as HTMLInputElement).value))}
           class="slider"
         />
         <div class="darko-info">
