@@ -71,6 +71,15 @@ export default function SalaryCalculator({ players }: Props) {
     );
   };
 
+  const updateMultipleFields = (
+    id: number,
+    updates: Partial<Comparison>
+  ) => {
+    setComparisons(
+      comparisons.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    );
+  };
+
   const selectPlayer = (id: number, player: Player) => {
     setComparisons(
       comparisons.map((c) =>
@@ -104,6 +113,7 @@ export default function SalaryCalculator({ players }: Props) {
             showRemove={comparisons.length > 1}
             onRemove={() => removeComparison(comp.id)}
             onUpdate={(field, value) => updateComparison(comp.id, field, value)}
+            onUpdateMultiple={(updates) => updateMultipleFields(comp.id, updates)}
             onSelectPlayer={(player) => selectPlayer(comp.id, player)}
             getFilteredPlayers={getFilteredPlayers}
           />
@@ -126,6 +136,7 @@ interface PlayerCardProps {
   showRemove: boolean;
   onRemove: () => void;
   onUpdate: (field: keyof Comparison, value: unknown) => void;
+  onUpdateMultiple: (updates: Partial<Comparison>) => void;
   onSelectPlayer: (player: Player) => void;
   getFilteredPlayers: (searchTerm: string) => Player[];
 }
@@ -136,6 +147,7 @@ function PlayerCard({
   showRemove,
   onRemove,
   onUpdate,
+  onUpdateMultiple,
   onSelectPlayer,
   getFilteredPlayers,
 }: PlayerCardProps) {
@@ -158,9 +170,11 @@ function PlayerCard({
             value={comp.searchTerm}
             onInput={(e) => {
               const target = e.target as HTMLInputElement;
-              onUpdate("searchTerm", target.value);
-              onUpdate("showDropdown", true);
-              onUpdate("selectedPlayer", null);
+              onUpdateMultiple({
+                searchTerm: target.value,
+                showDropdown: true,
+                selectedPlayer: null,
+              });
             }}
             onFocus={() => onUpdate("showDropdown", true)}
             placeholder="Search for a player..."
