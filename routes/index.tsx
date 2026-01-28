@@ -17,8 +17,8 @@ const FEATURED_TEAM_CODES = [
   "SAS",  // San Antonio Spurs - Rebuilding with Wemby (positive)
   "HOU",  // Houston Rockets - Young team developing (positive)
   "GSW",  // Golden State Warriors - Aging stars, big contracts (negative)
+  "SAC",  // Sacramento Kings - Overpaying veterans (negative)
   "LAL",  // Los Angeles Lakers - Veteran heavy (negative)
-  "MIL",  // Milwaukee Bucks - Mixed roster (negative)
 ];
 
 // Get featured players from the player data
