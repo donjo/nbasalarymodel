@@ -14,11 +14,19 @@
   --text-secondary: #a1a1a6;
   --text-muted: #6e6e73;
 
-  /* Accents */
-  --accent-orange: #ff6b2c;
-  --accent-orange-glow: rgba(255, 107, 44, 0.15);
-  --accent-cyan: #00d4ff;
-  --accent-cyan-glow: rgba(0, 212, 255, 0.1);
+  /* NBA Brand Colors */
+  --nba-blue: #17408B;
+  --nba-blue-light: #1d4ed8;
+  --nba-blue-glow: rgba(23, 64, 139, 0.2);
+  --nba-red: #C9082A;
+  --nba-red-light: #ef4444;
+  --nba-red-glow: rgba(201, 8, 42, 0.15);
+
+  /* Accent mappings (for compatibility) */
+  --accent-primary: var(--nba-red);
+  --accent-primary-glow: var(--nba-red-glow);
+  --accent-secondary: var(--nba-blue);
+  --accent-secondary-glow: var(--nba-blue-glow);
   --accent-green: #34d399;
   --accent-red: #f87171;
 
@@ -54,7 +62,7 @@ body::before {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 107, 44, 0.08), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 8, 42, 0.08), transparent),
     linear-gradient(180deg, transparent 0%, var(--bg-primary) 100%);
   pointer-events: none;
   z-index: -1;
@@ -117,7 +125,7 @@ body::before {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--accent-orange), var(--accent-cyan));
+  background: linear-gradient(90deg, var(--nba-red), var(--nba-blue));
 }
 
 .app-title {
@@ -145,13 +153,13 @@ body::before {
 }
 
 .app-link {
-  color: var(--accent-cyan);
+  color: #60a5fa;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .app-link:hover {
-  color: var(--accent-orange);
+  color: var(--nba-red-light);
 }
 
 /* Player card */
@@ -242,8 +250,8 @@ body::before {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+  border-color: var(--nba-blue-light);
+  box-shadow: 0 0 0 3px var(--nba-blue-glow);
 }
 
 .search-icon {
@@ -286,7 +294,7 @@ body::before {
 }
 
 .dropdown-item:hover {
-  background: var(--accent-cyan-glow);
+  background: var(--nba-blue-glow);
 }
 
 .dropdown-item-name {
@@ -298,7 +306,7 @@ body::before {
 .dropdown-item-stat {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: var(--accent-cyan);
+  color: #60a5fa;
 }
 
 .dropdown-empty {
@@ -326,7 +334,7 @@ body::before {
 .slider-value {
   font-family: var(--font-mono);
   font-weight: 600;
-  color: var(--accent-cyan);
+  color: #60a5fa;
   font-size: 0.875rem;
 }
 
@@ -345,26 +353,26 @@ body::before {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: linear-gradient(135deg, var(--accent-orange), #ff8f5c);
+  background: linear-gradient(135deg, var(--nba-red), var(--nba-red-light));
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255, 107, 44, 0.4);
+  box-shadow: 0 2px 8px rgba(201, 8, 42, 0.4);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 4px 16px rgba(255, 107, 44, 0.5);
+  box-shadow: 0 4px 16px rgba(201, 8, 42, 0.5);
 }
 
 .slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  background: linear-gradient(135deg, var(--accent-orange), #ff8f5c);
+  background: linear-gradient(135deg, var(--nba-red), var(--nba-red-light));
   border-radius: 50%;
   cursor: pointer;
   border: none;
-  box-shadow: 0 2px 8px rgba(255, 107, 44, 0.4);
+  box-shadow: 0 2px 8px rgba(201, 8, 42, 0.4);
 }
 
 /* DARKO info box */
@@ -419,7 +427,7 @@ body::before {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-orange));
+  background: linear-gradient(90deg, var(--nba-blue), var(--nba-red));
 }
 
 .results-player-name {
@@ -469,7 +477,7 @@ body::before {
 }
 
 .result-value-projected {
-  color: var(--accent-cyan);
+  color: #60a5fa;
 }
 
 .result-value-actual {
@@ -535,7 +543,7 @@ body::before {
 }
 
 .projection-row:hover {
-  background: var(--accent-cyan-glow);
+  background: var(--nba-blue-glow);
   margin: 0 -0.5rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
@@ -561,7 +569,7 @@ body::before {
   font-family: var(--font-mono);
   font-weight: 600;
   text-align: right;
-  color: var(--accent-cyan);
+  color: #60a5fa;
 }
 
 .projection-actual {
@@ -608,8 +616,8 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, var(--accent-orange), #ff8f5c);
-  color: var(--bg-primary);
+  background: linear-gradient(135deg, var(--nba-red), var(--nba-red-light));
+  color: #ffffff;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
@@ -618,12 +626,12 @@ body::before {
   letter-spacing: 0.1em;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(255, 107, 44, 0.3);
+  box-shadow: 0 4px 16px rgba(201, 8, 42, 0.3);
 }
 
 .add-player-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 107, 44, 0.4);
+  box-shadow: 0 8px 24px rgba(201, 8, 42, 0.4);
 }
 
 .add-player-btn:active {
@@ -648,8 +656,8 @@ body::before {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--accent-orange);
-  background: var(--accent-orange-glow);
+  color: var(--nba-red-light);
+  background: var(--nba-red-glow);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
 }

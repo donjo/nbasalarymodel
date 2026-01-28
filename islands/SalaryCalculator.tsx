@@ -289,7 +289,7 @@ function PlayerDetails({ comp, onUpdate }: PlayerDetailsProps) {
           </div>
           <div class="darko-row">
             <span class="darko-label">Adjusted DARKO</span>
-            <span class="darko-value" style={{ color: "var(--accent-cyan)" }}>
+            <span class="darko-value" style={{ color: "#60a5fa" }}>
               {(player.darko + comp.improvement).toFixed(1)}
               <span class="darko-tier">
                 ({getDarkoLabel(player.darko + comp.improvement)})
