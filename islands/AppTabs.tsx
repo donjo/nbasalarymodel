@@ -1,14 +1,21 @@
 /**
  * AppTabs Island - Handles tab switching between Player and Team views
  * Includes unified search in the navigation bar
+ * Manages shareable URL state for player/team selections
  */
 
-import { useState } from "preact/hooks";
+import { useState, useEffect, useRef } from "preact/hooks";
 import { SearchIcon, PlusIcon } from "../components/Icons.tsx";
 import SalaryCalculator from "./SalaryCalculator.tsx";
 import TeamsComparison from "./TeamsComparison.tsx";
 import type { Player } from "../lib/players.ts";
 import { getTeamFullName, getUniqueTeamCodes } from "../lib/teams.ts";
+import {
+  encodeStateToURL,
+  decodeURLToState,
+  getDefaultSettings,
+  type PlayerSettings,
+} from "../lib/url.ts";
 
 interface Props {
   players: Player[];
@@ -28,9 +35,98 @@ export default function AppTabs({
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Track added players and teams
-  const [addedPlayerNames, setAddedPlayerNames] = useState<Set<string>>(new Set());
+  // Player selections with their custom settings (name -> settings)
+  const [playerSelections, setPlayerSelections] = useState<Map<string, PlayerSettings>>(new Map());
+
+  // Team codes that have been added
   const [addedTeamCodes, setAddedTeamCodes] = useState<Set<string>>(new Set());
+
+  // Team player custom settings (player name -> settings)
+  const [teamPlayerSettings, setTeamPlayerSettings] = useState<Map<string, PlayerSettings>>(new Map());
+
+  // Track if we've loaded state from URL (to avoid overwriting on mount)
+  const hasLoadedFromURL = useRef(false);
+
+  // Derive addedPlayerNames from playerSelections for filtering
+  const addedPlayerNames = new Set(playerSelections.keys());
+
+  // Load state from URL on mount
+  useEffect(() => {
+    if (hasLoadedFromURL.current) return;
+    hasLoadedFromURL.current = true;
+
+    const urlState = decodeURLToState(globalThis.location?.search || "");
+
+    if (urlState.activeTab) {
+      setActiveTab(urlState.activeTab);
+    }
+
+    if (urlState.playerSelections) {
+      // Validate player names exist in our data
+      const validSelections = new Map<string, PlayerSettings>();
+      urlState.playerSelections.forEach((settings, name) => {
+        if (players.some((p) => p.name === name)) {
+          validSelections.set(name, settings);
+        }
+      });
+      if (validSelections.size > 0) {
+        setPlayerSelections(validSelections);
+      }
+    }
+
+    if (urlState.teamCodes) {
+      // Validate team codes
+      const allTeamCodes = getUniqueTeamCodes();
+      const validCodes = new Set<string>();
+      urlState.teamCodes.forEach((code) => {
+        if (allTeamCodes.includes(code)) {
+          validCodes.add(code);
+        }
+      });
+      if (validCodes.size > 0) {
+        setAddedTeamCodes(validCodes);
+      }
+    }
+
+    if (urlState.teamPlayerSettings) {
+      setTeamPlayerSettings(urlState.teamPlayerSettings);
+    }
+  }, [players]);
+
+  // Update URL when state changes (debounced to avoid too many updates during slider drags)
+  const urlUpdateTimeout = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Skip if we haven't loaded from URL yet (initial mount)
+    if (!hasLoadedFromURL.current) return;
+
+    // Clear any pending update
+    if (urlUpdateTimeout.current !== null) {
+      clearTimeout(urlUpdateTimeout.current);
+    }
+
+    // Debounce URL updates by 300ms
+    urlUpdateTimeout.current = setTimeout(() => {
+      const urlString = encodeStateToURL({
+        activeTab,
+        playerSelections,
+        teamCodes: addedTeamCodes,
+        teamPlayerSettings,
+      });
+
+      // Only update if URL would actually change
+      const newSearch = urlString ? `?${urlString}` : "";
+      if (globalThis.location?.search !== newSearch) {
+        globalThis.history?.replaceState(null, "", newSearch || globalThis.location?.pathname);
+      }
+    }, 300);
+
+    return () => {
+      if (urlUpdateTimeout.current !== null) {
+        clearTimeout(urlUpdateTimeout.current);
+      }
+    };
+  }, [activeTab, playerSelections, addedTeamCodes, teamPlayerSettings]);
 
   // Get all unique team codes
   const allTeamCodes = getUniqueTeamCodes();
@@ -65,15 +161,31 @@ export default function AppTabs({
 
   // Callbacks to track added items (passed to child components)
   const handlePlayerAdded = (name: string) => {
-    setAddedPlayerNames(new Set([...addedPlayerNames, name]));
+    const newSelections = new Map(playerSelections);
+    newSelections.set(name, getDefaultSettings());
+    setPlayerSelections(newSelections);
     setSearchTerm("");
     setShowDropdown(false);
   };
 
   const handlePlayerRemoved = (name: string) => {
-    const newSet = new Set(addedPlayerNames);
-    newSet.delete(name);
-    setAddedPlayerNames(newSet);
+    const newSelections = new Map(playerSelections);
+    newSelections.delete(name);
+    setPlayerSelections(newSelections);
+  };
+
+  // Callback for when player settings change (from SalaryCalculator)
+  const handlePlayerSettingsChange = (name: string, settings: PlayerSettings) => {
+    const newSelections = new Map(playerSelections);
+    newSelections.set(name, settings);
+    setPlayerSelections(newSelections);
+  };
+
+  // Callback for when team player settings change (from TeamsComparison)
+  const handleTeamPlayerSettingsChange = (name: string, settings: PlayerSettings) => {
+    const newSettings = new Map(teamPlayerSettings);
+    newSettings.set(name, settings);
+    setTeamPlayerSettings(newSettings);
   };
 
   const handleTeamAdded = (code: string) => {
@@ -211,9 +323,10 @@ export default function AppTabs({
         <SalaryCalculator
           players={players}
           featuredPlayers={featuredPlayers}
-          addedPlayerNames={addedPlayerNames}
+          playerSelections={playerSelections}
           onPlayerAdded={handlePlayerAdded}
           onPlayerRemoved={handlePlayerRemoved}
+          onPlayerSettingsChange={handlePlayerSettingsChange}
         />
       ) : (
         <TeamsComparison
@@ -222,6 +335,8 @@ export default function AppTabs({
           addedTeamCodes={addedTeamCodes}
           onTeamAdded={handleTeamAdded}
           onTeamRemoved={handleTeamRemoved}
+          teamPlayerSettings={teamPlayerSettings}
+          onTeamPlayerSettingsChange={handleTeamPlayerSettingsChange}
         />
       )}
     </>

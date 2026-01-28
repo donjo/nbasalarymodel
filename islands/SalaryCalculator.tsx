@@ -1,8 +1,8 @@
 /**
  * SalaryCalculator Island - Sports Analytics Editorial Design
+ * Controlled component that receives player selections and settings from parent
  */
 
-import { useState, useEffect } from "preact/hooks";
 import { PlusIcon, TrashIcon } from "../components/Icons.tsx";
 import type { Player } from "../lib/players.ts";
 import {
@@ -12,83 +12,59 @@ import {
   INFLATION_SCALERS,
   FUTURE_YEARS,
 } from "../lib/salary.ts";
-
-interface PlayerCard {
-  id: number;
-  player: Player;
-  games: number;
-  minutes: number;
-  improvement: number;
-}
+import {
+  type PlayerSettings,
+  DEFAULT_GAMES,
+  DEFAULT_MINUTES,
+} from "../lib/url.ts";
 
 interface Props {
   players: Player[];
   featuredPlayers?: Player[];
-  addedPlayerNames: Set<string>;
+  playerSelections: Map<string, PlayerSettings>;
   onPlayerAdded: (name: string) => void;
   onPlayerRemoved: (name: string) => void;
+  onPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
 }
-
-// Default values for projections
-const DEFAULT_GAMES = 70;
-const DEFAULT_MINUTES = 30;
 
 export default function SalaryCalculator({
   players,
   featuredPlayers = [],
-  addedPlayerNames,
+  playerSelections,
   onPlayerAdded,
   onPlayerRemoved,
+  onPlayerSettingsChange,
 }: Props) {
-  // Player cards (only for added players)
-  const [playerCards, setPlayerCards] = useState<PlayerCard[]>([]);
-
-  // Sync playerCards with addedPlayerNames from parent
-  useEffect(() => {
-    // Add new players that aren't in cards yet
-    addedPlayerNames.forEach((name) => {
-      if (!playerCards.some((c) => c.player.name === name)) {
-        const player = players.find((p) => p.name === name);
-        if (player) {
-          setPlayerCards((prev) => [
-            ...prev,
-            {
-              id: Date.now() + Math.random(),
-              player,
-              games: DEFAULT_GAMES,
-              minutes: DEFAULT_MINUTES,
-              improvement: 0,
-            },
-          ]);
-        }
-      }
-    });
-
-    // Remove players that are no longer in addedPlayerNames
-    setPlayerCards((prev) =>
-      prev.filter((c) => addedPlayerNames.has(c.player.name))
-    );
-  }, [addedPlayerNames, players]);
+  // Build player cards from selections Map
+  const playerCards = Array.from(playerSelections.entries())
+    .map(([name, settings]) => {
+      const player = players.find((p) => p.name === name);
+      if (!player) return null;
+      return { player, settings };
+    })
+    .filter((card): card is { player: Player; settings: PlayerSettings } => card !== null);
 
   const addPlayer = (player: Player) => {
     onPlayerAdded(player.name);
   };
 
-  const removePlayer = (card: PlayerCard) => {
-    onPlayerRemoved(card.player.name);
+  const removePlayer = (playerName: string) => {
+    onPlayerRemoved(playerName);
   };
 
-  const updatePlayerCard = (
-    id: number,
-    field: keyof Omit<PlayerCard, "id" | "player">,
+  const updatePlayerSettings = (
+    playerName: string,
+    field: keyof PlayerSettings,
     value: number
   ) => {
-    setPlayerCards(
-      playerCards.map((c) => (c.id === id ? { ...c, [field]: value } : c))
-    );
+    const currentSettings = playerSelections.get(playerName);
+    if (currentSettings) {
+      onPlayerSettingsChange(playerName, { ...currentSettings, [field]: value });
+    }
   };
 
   // Filter out featured players that are already added
+  const addedPlayerNames = new Set(playerSelections.keys());
   const availableFeatured = featuredPlayers.filter(
     (p) => !addedPlayerNames.has(p.name)
   );
@@ -101,12 +77,13 @@ export default function SalaryCalculator({
       {/* Player Cards (comparison mode) */}
       {isComparisonMode && (
         <div class="player-grid">
-          {playerCards.map((card) => (
+          {playerCards.map(({ player, settings }) => (
             <PlayerCardComponent
-              key={card.id}
-              card={card}
-              onRemove={() => removePlayer(card)}
-              onUpdate={(field, value) => updatePlayerCard(card.id, field, value)}
+              key={player.name}
+              player={player}
+              settings={settings}
+              onRemove={() => removePlayer(player.name)}
+              onUpdate={(field, value) => updatePlayerSettings(player.name, field, value)}
             />
           ))}
         </div>
@@ -198,18 +175,18 @@ function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
 }
 
 interface PlayerCardComponentProps {
-  card: PlayerCard;
+  player: Player;
+  settings: PlayerSettings;
   onRemove: () => void;
-  onUpdate: (field: keyof Omit<PlayerCard, "id" | "player">, value: number) => void;
+  onUpdate: (field: keyof PlayerSettings, value: number) => void;
 }
 
 function PlayerCardComponent({
-  card,
+  player,
+  settings,
   onRemove,
   onUpdate,
 }: PlayerCardComponentProps) {
-  const player = card.player;
-
   return (
     <div class="player-card">
       <div class="player-card-header">
@@ -222,19 +199,19 @@ function PlayerCardComponent({
         </button>
       </div>
 
-      <ResultsPanel card={card} />
+      <ResultsPanel player={player} settings={settings} />
 
       <div class="adjustments-section">
         <div class="slider-group">
           <div class="slider-label">
             <span>Games Played</span>
-            <span class="slider-value">{card.games}</span>
+            <span class="slider-value">{settings.games}</span>
           </div>
           <input
             type="range"
             min="1"
             max="82"
-            value={card.games}
+            value={settings.games}
             onInput={(e) =>
               onUpdate("games", parseInt((e.target as HTMLInputElement).value))
             }
@@ -245,13 +222,13 @@ function PlayerCardComponent({
         <div class="slider-group">
           <div class="slider-label">
             <span>Minutes Per Game</span>
-            <span class="slider-value">{card.minutes}</span>
+            <span class="slider-value">{settings.minutes}</span>
           </div>
           <input
             type="range"
             min="0"
             max="48"
-            value={card.minutes}
+            value={settings.minutes}
             onInput={(e) =>
               onUpdate("minutes", parseInt((e.target as HTMLInputElement).value))
             }
@@ -263,8 +240,8 @@ function PlayerCardComponent({
           <div class="slider-label">
             <span>DARKO Adjustment</span>
             <span class="slider-value">
-              {card.improvement > 0 ? "+" : ""}
-              {card.improvement.toFixed(1)}
+              {settings.improvement > 0 ? "+" : ""}
+              {settings.improvement.toFixed(1)}
             </span>
           </div>
           <input
@@ -272,7 +249,7 @@ function PlayerCardComponent({
             min="-5"
             max="5"
             step="0.1"
-            value={card.improvement}
+            value={settings.improvement}
             onInput={(e) =>
               onUpdate(
                 "improvement",
@@ -292,9 +269,9 @@ function PlayerCardComponent({
             <div class="darko-row">
               <span class="darko-label">Adjusted DARKO</span>
               <span class="darko-value" style={{ color: "#60a5fa" }}>
-                {(player.darko + card.improvement).toFixed(1)}
+                {(player.darko + settings.improvement).toFixed(1)}
                 <span class="darko-tier">
-                  ({getDarkoLabel(player.darko + card.improvement)})
+                  ({getDarkoLabel(player.darko + settings.improvement)})
                 </span>
               </span>
             </div>
@@ -306,16 +283,16 @@ function PlayerCardComponent({
 }
 
 interface ResultsPanelProps {
-  card: PlayerCard;
+  player: Player;
+  settings: PlayerSettings;
 }
 
-function ResultsPanel({ card }: ResultsPanelProps) {
-  const player = card.player;
+function ResultsPanel({ player, settings }: ResultsPanelProps) {
   const projected = calculateSalary(
-    card.games,
-    card.minutes,
+    settings.games,
+    settings.minutes,
     player.darko,
-    card.improvement
+    settings.improvement
   );
   const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
 
@@ -336,10 +313,10 @@ function ResultsPanel({ card }: ResultsPanelProps) {
     }
 
     const currentProjectedDarko =
-      player.darko + card.improvement + cumulativeDelta;
+      player.darko + settings.improvement + cumulativeDelta;
     const rawMarketValue = calculateSalary(
-      card.games,
-      card.minutes,
+      settings.games,
+      settings.minutes,
       currentProjectedDarko,
       0
     );

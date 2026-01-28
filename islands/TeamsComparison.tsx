@@ -1,8 +1,9 @@
 /**
  * TeamsComparison Island - Compare NBA team rosters and payrolls
+ * Receives teamPlayerSettings from parent for URL-shareable state
  */
 
-import { useState, useEffect } from "preact/hooks";
+import { useState } from "preact/hooks";
 import { PlusIcon, TrashIcon } from "../components/Icons.tsx";
 import type { Player } from "../lib/players.ts";
 import { getTeamFullName } from "../lib/teams.ts";
@@ -13,6 +14,11 @@ import {
   INFLATION_SCALERS,
   FUTURE_YEARS,
 } from "../lib/salary.ts";
+import {
+  type PlayerSettings,
+  DEFAULT_GAMES,
+  DEFAULT_MINUTES,
+} from "../lib/url.ts";
 
 interface Props {
   players: Player[];
@@ -20,17 +26,8 @@ interface Props {
   addedTeamCodes: Set<string>;
   onTeamAdded: (code: string) => void;
   onTeamRemoved: (code: string) => void;
-}
-
-// Standard defaults for team comparison (same as player calculator defaults)
-const DEFAULT_GAMES = 70;
-const DEFAULT_MINUTES = 30;
-
-// Player settings for custom games/minutes/improvement
-interface PlayerSettings {
-  games: number;
-  minutes: number;
-  improvement: number;
+  teamPlayerSettings: Map<string, PlayerSettings>;
+  onTeamPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
 }
 
 // Format salary as currency (e.g., "$25.5M")
@@ -56,6 +53,8 @@ export default function TeamsComparison({
   addedTeamCodes,
   onTeamAdded,
   onTeamRemoved,
+  teamPlayerSettings,
+  onTeamPlayerSettingsChange,
 }: Props) {
   // Selected teams - derived from addedTeamCodes
   const selectedTeams = [...addedTeamCodes];
@@ -112,6 +111,8 @@ export default function TeamsComparison({
               roster={getTeamRoster(teamCode)}
               totalPayroll={getTeamPayroll(teamCode)}
               onRemove={() => removeTeam(teamCode)}
+              playerSettings={teamPlayerSettings}
+              onPlayerSettingsChange={onTeamPlayerSettingsChange}
             />
           ))}
         </div>
@@ -198,33 +199,36 @@ interface TeamCardProps {
   roster: Player[];
   totalPayroll: number;
   onRemove: () => void;
+  playerSettings: Map<string, PlayerSettings>;
+  onPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
 }
 
-function TeamCard({ teamCode, roster, totalPayroll, onRemove }: TeamCardProps) {
+function TeamCard({
+  teamCode,
+  roster,
+  totalPayroll,
+  onRemove,
+  playerSettings,
+  onPlayerSettingsChange,
+}: TeamCardProps) {
   // Sort state - default to salary (highest first)
   const [sortBy, setSortBy] = useState<SortField>("salary");
 
   // Track which player is expanded (null = none)
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
-  // Track custom settings per player (keyed by player name)
-  const [playerSettings, setPlayerSettings] = useState<Record<string, PlayerSettings>>({});
-
   // Get settings for a player (returns defaults if not customized)
   const getSettings = (playerName: string): PlayerSettings => {
-    return playerSettings[playerName] || {
+    return playerSettings.get(playerName) || {
       games: DEFAULT_GAMES,
       minutes: DEFAULT_MINUTES,
       improvement: 0,
     };
   };
 
-  // Update settings for a player
+  // Update settings for a player (calls parent callback)
   const updateSettings = (playerName: string, newSettings: PlayerSettings) => {
-    setPlayerSettings((prev) => ({
-      ...prev,
-      [playerName]: newSettings,
-    }));
+    onPlayerSettingsChange(playerName, newSettings);
   };
 
   // Calculate total projected value and surplus for the team (using custom settings)
