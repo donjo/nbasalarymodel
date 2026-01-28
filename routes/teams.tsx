@@ -1,24 +1,14 @@
-import TeamsComparison from "../islands/TeamsComparison.tsx";
-import { PLAYER_DATA } from "../lib/players.ts";
+import { Handlers } from "$fresh/server.ts";
 
-export default function Teams() {
-  return (
-    <div class="app-container">
-      {/* Header */}
-      <header class="app-header">
-        <h1 class="app-title">TEAM COMPARISON</h1>
-        <p class="app-subtitle">
-          Compare NBA team rosters and total payrolls side-by-side.
-        </p>
-        <p class="app-meta">
-          <a href="/" class="app-link">
-            &larr; Back to Player Salary Model
-          </a>
-        </p>
-      </header>
-
-      {/* Interactive Teams Comparison */}
-      <TeamsComparison players={PLAYER_DATA} />
-    </div>
-  );
-}
+// Redirect /teams to the main page
+// The main page now has both Player and Team views with tab navigation
+export const handler: Handlers = {
+  GET(_req) {
+    return new Response(null, {
+      status: 307,
+      headers: {
+        Location: "/",
+      },
+    });
+  },
+};

@@ -2,10 +2,10 @@
  * TeamsComparison Island - Compare NBA team rosters and payrolls
  */
 
-import { useState } from "preact/hooks";
-import { SearchIcon, PlusIcon, TrashIcon } from "../components/Icons.tsx";
+import { useState, useEffect } from "preact/hooks";
+import { PlusIcon, TrashIcon } from "../components/Icons.tsx";
 import type { Player } from "../lib/players.ts";
-import { TEAM_NAMES, getTeamFullName, getUniqueTeamCodes } from "../lib/teams.ts";
+import { getTeamFullName } from "../lib/teams.ts";
 import {
   calculateSalary,
   getDarkoLabel,
@@ -16,6 +16,10 @@ import {
 
 interface Props {
   players: Player[];
+  featuredTeamCodes?: string[];
+  addedTeamCodes: Set<string>;
+  onTeamAdded: (code: string) => void;
+  onTeamRemoved: (code: string) => void;
 }
 
 // Standard defaults for team comparison (same as player calculator defaults)
@@ -46,47 +50,15 @@ function getProjectedValue(player: Player, settings?: PlayerSettings): number {
   return parseFloat(result);
 }
 
-export default function TeamsComparison({ players }: Props) {
-  // Search state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  // Selected teams to compare (stored as team codes)
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-
-  // Get all unique team codes sorted alphabetically by full name
-  const allTeamCodes = getUniqueTeamCodes();
-
-  // Filter teams based on search term
-  const getFilteredTeams = (term: string): string[] => {
-    if (!term) return [];
-
-    const lowerTerm = term.toLowerCase();
-
-    // Filter teams that match the search and aren't already selected
-    return allTeamCodes
-      .filter((code) => {
-        // Check if already selected
-        if (selectedTeams.includes(code)) return false;
-
-        // Match against full name or code
-        const fullName = getTeamFullName(code).toLowerCase();
-        return fullName.includes(lowerTerm) || code.toLowerCase().includes(lowerTerm);
-      })
-      .slice(0, 10);
-  };
-
-  // Add a team to the comparison
-  const addTeam = (teamCode: string) => {
-    setSelectedTeams([...selectedTeams, teamCode]);
-    setSearchTerm("");
-    setShowDropdown(false);
-  };
-
-  // Remove a team from the comparison
-  const removeTeam = (teamCode: string) => {
-    setSelectedTeams(selectedTeams.filter((code) => code !== teamCode));
-  };
+export default function TeamsComparison({
+  players,
+  featuredTeamCodes = [],
+  addedTeamCodes,
+  onTeamAdded,
+  onTeamRemoved,
+}: Props) {
+  // Selected teams - derived from addedTeamCodes
+  const selectedTeams = [...addedTeamCodes];
 
   // Get players for a specific team, sorted by salary (highest first)
   const getTeamRoster = (teamCode: string): Player[] => {
@@ -104,64 +76,34 @@ export default function TeamsComparison({ players }: Props) {
     return roster.reduce((total, player) => total + player.actualSalary, 0);
   };
 
-  const filteredTeams = getFilteredTeams(searchTerm);
+  // Calculate total projected value for a team
+  const getTeamTotalValue = (teamCode: string): number => {
+    const roster = getTeamRoster(teamCode);
+    return roster.reduce((total, player) => total + getProjectedValue(player), 0);
+  };
+
+  // Add a team to the comparison
+  const addTeam = (teamCode: string) => {
+    onTeamAdded(teamCode);
+  };
+
+  // Remove a team from the comparison
+  const removeTeam = (teamCode: string) => {
+    onTeamRemoved(teamCode);
+  };
+
+  // Filter out featured teams that are already selected
+  const availableFeatured = featuredTeamCodes.filter(
+    (code) => !addedTeamCodes.has(code)
+  );
+
+  // Check if we're in comparison mode (at least one team selected)
+  const isComparisonMode = selectedTeams.length > 0;
 
   return (
     <>
-      {/* Global Search Box */}
-      <div class="search-section">
-        <div class="search-container">
-          <label class="search-label">Search Teams</label>
-          <div class="search-input-wrapper">
-            <input
-              type="text"
-              value={searchTerm}
-              onInput={(e) => {
-                setSearchTerm((e.target as HTMLInputElement).value);
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholder="Search for a team to add..."
-              class="search-input"
-            />
-            <div class="search-icon">
-              <SearchIcon size={18} />
-            </div>
-          </div>
-
-          {showDropdown && searchTerm && (
-            <div class="dropdown">
-              {filteredTeams.map((teamCode) => (
-                <div key={teamCode} class="dropdown-item-with-button">
-                  <div class="dropdown-item-info">
-                    <div class="dropdown-item-name">{getTeamFullName(teamCode)}</div>
-                    <div class="dropdown-item-stat">{teamCode}</div>
-                  </div>
-                  <button
-                    onClick={() => addTeam(teamCode)}
-                    class="dropdown-add-btn"
-                  >
-                    <PlusIcon size={16} />
-                    Add
-                  </button>
-                </div>
-              ))}
-              {filteredTeams.length === 0 && (
-                <div class="dropdown-empty">
-                  {selectedTeams.some((code) =>
-                    getTeamFullName(code).toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                    ? "Team already added"
-                    : "No teams found"}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Team Cards Grid */}
-      {selectedTeams.length > 0 && (
+      {/* Team Cards Grid (comparison mode) */}
+      {isComparisonMode && (
         <div class="player-grid">
           {selectedTeams.map((teamCode) => (
             <TeamCard
@@ -175,13 +117,76 @@ export default function TeamsComparison({ players }: Props) {
         </div>
       )}
 
-      {/* Empty state */}
-      {selectedTeams.length === 0 && (
-        <div class="empty-state">
-          <p>Search for teams above to compare rosters and payrolls</p>
+      {/* Empty state with featured teams */}
+      {!isComparisonMode && (
+        <div class="featured-section">
+          <div class="featured-header">
+            <h2 class="featured-title">Featured Teams</h2>
+            <p class="featured-subtitle">
+              Click "Add" to start comparing team rosters
+            </p>
+          </div>
+          <div class="preview-grid">
+            {availableFeatured.map((teamCode) => (
+              <TeamPreviewCard
+                key={teamCode}
+                teamCode={teamCode}
+                totalPayroll={getTeamPayroll(teamCode)}
+                totalValue={getTeamTotalValue(teamCode)}
+                onAdd={() => addTeam(teamCode)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </>
+  );
+}
+
+// Team preview card component - shows team totals without roster
+interface TeamPreviewCardProps {
+  teamCode: string;
+  totalPayroll: number;
+  totalValue: number;
+  onAdd: () => void;
+}
+
+function TeamPreviewCard({ teamCode, totalPayroll, totalValue, onAdd }: TeamPreviewCardProps) {
+  const surplus = totalValue - totalPayroll;
+
+  return (
+    <div class="preview-card">
+      <button onClick={onAdd} class="preview-add-btn" title="Add to comparison">
+        <PlusIcon size={14} />
+        Add
+      </button>
+
+      <h3 class="preview-card-title">{getTeamFullName(teamCode)}</h3>
+      <div class="preview-card-meta">{teamCode}</div>
+
+      <div class="preview-stats">
+        <div class="preview-stat">
+          <span class="preview-stat-label">Total Payroll</span>
+          <span class="preview-stat-value">{formatSalary(totalPayroll)}</span>
+        </div>
+        <div class="preview-stat">
+          <span class="preview-stat-label">Total Value</span>
+          <span class="preview-stat-value">
+            {formatSalary(totalValue)}
+          </span>
+        </div>
+        <div class="preview-stat preview-stat-surplus">
+          <span class="preview-stat-label">Surplus</span>
+          <span
+            class={`preview-stat-value ${
+              surplus >= 0 ? "surplus-positive" : "surplus-negative"
+            }`}
+          >
+            {surplus >= 0 ? "+" : ""}{formatSalary(surplus)}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
