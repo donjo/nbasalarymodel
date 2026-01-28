@@ -801,7 +801,7 @@
                                                     {(() => {
                                                         const projected = calculateSalary(comp.games, comp.minutes, comp.selectedPlayer.darko, comp.improvement);
                                                         if (!comp.selectedPlayer.actualSalary) return null;
-                                                        const projValNum = projected === "Minimum Salary" ? 1.1 : parseFloat(projected);
+                                                        const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
                                                         const diff = projValNum - comp.selectedPlayer.actualSalary;
                                                         return (
                                                             <div className={`text-sm font-medium mt-1 ${diff > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -838,7 +838,7 @@
                                                 let runningTotalSurplus = 0;
                                                 const currentProj = calculateSalary(comp.games, comp.minutes, comp.selectedPlayer.darko, comp.improvement);
                                                 if (comp.selectedPlayer.actualSalary) {
-                                                    const currentProjNum = currentProj === "Minimum Salary" ? 1.1 : parseFloat(currentProj);
+                                                    const currentProjNum = currentProj === "Minimum Salary" ? 0 : parseFloat(currentProj);
                                                     runningTotalSurplus = currentProjNum - comp.selectedPlayer.actualSalary;
                                                 }
 
@@ -859,7 +859,7 @@
 
                                                     if (rawMarketValue === "Minimum Salary") {
                                                         projectedMarketValueLabel = "Min";
-                                                        inflatedValueNum = 1.1; 
+                                                        inflatedValueNum = 0; 
                                                     } else {
                                                         inflatedValueNum = parseFloat(rawMarketValue) * (inflationScalers[seasonLabel] || 1);
                                                         projectedMarketValueLabel = `$${inflatedValueNum.toFixed(1)}M`;
