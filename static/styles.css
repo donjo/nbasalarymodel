@@ -953,7 +953,7 @@ body::before {
   border: 1px solid var(--border-subtle);
   border-radius: 0.75rem;
   padding: 1rem 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .tab-nav-row {
@@ -1162,7 +1162,7 @@ body::before {
 
 /* Leaderboard Styles */
 .leaderboard-container {
-  padding: 1rem 0;
+  padding: 0;
 }
 
 .leaderboard-grid {
