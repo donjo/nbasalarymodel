@@ -218,11 +218,11 @@ function TeamCard({
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   // Get settings for a player (returns defaults if not customized)
-  // Uses the player's actual avgMinutes as the default instead of a fixed 30
+  // Uses the player's actual avgMinutes, or 0 if not in current NBA stats
   const getSettings = (player: Player): PlayerSettings => {
     return playerSettings.get(player.name) || {
       games: DEFAULT_GAMES,
-      minutes: player.avgMinutes ?? DEFAULT_MINUTES,
+      minutes: player.avgMinutes ?? 0,
       improvement: 0,
     };
   };
@@ -330,7 +330,7 @@ function TeamCard({
                 >
                   <span class="roster-player-name roster-player-clickable">
                     <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span> {player.name}
-                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== (player.avgMinutes ?? DEFAULT_MINUTES) ? "roster-player-settings-modified" : ""}`}>
+                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== (player.avgMinutes ?? 0) ? "roster-player-settings-modified" : ""}`}>
                       G — {settings.games} · MP — {settings.minutes}
                     </span>
                   </span>
