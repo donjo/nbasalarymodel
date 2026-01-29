@@ -1195,7 +1195,7 @@ body::before {
   font-size: 1.25rem;
   letter-spacing: 0.05em;
   color: var(--text-primary);
-  margin: 0 0 0.25rem;
+  margin: 0;
 }
 
 .leaderboard-table-subtitle {
