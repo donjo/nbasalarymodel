@@ -218,10 +218,11 @@ function TeamCard({
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   // Get settings for a player (returns defaults if not customized)
-  const getSettings = (playerName: string): PlayerSettings => {
-    return playerSettings.get(playerName) || {
+  // Uses the player's actual avgMinutes as the default instead of a fixed 30
+  const getSettings = (player: Player): PlayerSettings => {
+    return playerSettings.get(player.name) || {
       games: DEFAULT_GAMES,
-      minutes: DEFAULT_MINUTES,
+      minutes: player.avgMinutes ?? DEFAULT_MINUTES,
       improvement: 0,
     };
   };
@@ -233,15 +234,15 @@ function TeamCard({
 
   // Calculate total projected value and surplus for the team (using custom settings)
   const totalValue = roster.reduce(
-    (sum, player) => sum + getProjectedValue(player, getSettings(player.name)),
+    (sum, player) => sum + getProjectedValue(player, getSettings(player)),
     0
   );
   const totalSurplus = totalValue - totalPayroll;
 
   // Sort the roster based on current sort field (using custom settings)
   const sortedRoster = [...roster].sort((a, b) => {
-    const aValue = getProjectedValue(a, getSettings(a.name));
-    const bValue = getProjectedValue(b, getSettings(b.name));
+    const aValue = getProjectedValue(a, getSettings(a));
+    const bValue = getProjectedValue(b, getSettings(b));
     const aSurplus = aValue - a.actualSalary;
     const bSurplus = bValue - b.actualSalary;
 
@@ -315,7 +316,7 @@ function TeamCard({
         </div>
         <div class="roster-table">
           {sortedRoster.map((player) => {
-            const settings = getSettings(player.name);
+            const settings = getSettings(player);
             const projectedValue = getProjectedValue(player, settings);
             const surplus = projectedValue - player.actualSalary;
             const isPositive = surplus >= 0;
@@ -329,7 +330,7 @@ function TeamCard({
                 >
                   <span class="roster-player-name roster-player-clickable">
                     <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span> {player.name}
-                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== DEFAULT_MINUTES ? "roster-player-settings-modified" : ""}`}>
+                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== (player.avgMinutes ?? DEFAULT_MINUTES) ? "roster-player-settings-modified" : ""}`}>
                       G — {settings.games} · MP — {settings.minutes}
                     </span>
                   </span>

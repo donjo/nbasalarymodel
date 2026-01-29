@@ -23,6 +23,49 @@ interface NbaStats {
 }
 
 /**
+ * Update the fallback players.ts file with merged data
+ *
+ * This is necessary because Vite dev mode doesn't have access to Deno KV,
+ * so we need to update the hardcoded fallback data to include avgMinutes.
+ */
+async function updateFallbackFile(players: Player[]) {
+  const fallbackPath = new URL("../lib/players.ts", import.meta.url);
+
+  // Generate the new file content
+  const playerLines = players.map((p) => {
+    const futureSalaries = JSON.stringify(p.futureSalaries);
+    // Include avgMinutes and gamesPlayed if they exist
+    const extras: string[] = [];
+    if (p.avgMinutes !== undefined) {
+      extras.push(`avgMinutes: ${p.avgMinutes}`);
+    }
+    if (p.gamesPlayed !== undefined) {
+      extras.push(`gamesPlayed: ${p.gamesPlayed}`);
+    }
+    const extrasStr = extras.length > 0 ? `, ${extras.join(", ")}` : "";
+    return `{ name: "${p.name}", team: "${p.team}", age: ${p.age}, darko: ${p.darko}, actualSalary: ${p.actualSalary}, futureSalaries: ${futureSalaries}${extrasStr} }`;
+  });
+
+  const fileContent = `/**
+ * Fallback player data for the NBA Salary Model
+ *
+ * This hardcoded data is used when Deno KV is empty or unavailable.
+ * In normal operation, the app fetches data from KV instead.
+ */
+import type { Player } from "./types.ts";
+
+export type { Player };
+
+export const PLAYER_DATA: Player[] = [
+${playerLines.join(",\n")}
+];
+`;
+
+  await Deno.writeTextFile(fallbackPath, fileContent);
+  console.log("   Updated lib/players.ts fallback file");
+}
+
+/**
  * Main function to merge stats
  */
 async function main() {
@@ -86,6 +129,10 @@ async function main() {
 
   // Save updated players back to KV
   await setPlayers(updatedPlayers);
+
+  // Also update the fallback file (lib/players.ts) for Vite dev mode
+  // Since Vite doesn't have access to Deno KV, we need the fallback to have the data too
+  await updateFallbackFile(updatedPlayers);
 
   // Report results
   console.log("");
