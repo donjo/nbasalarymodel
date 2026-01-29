@@ -12,21 +12,20 @@ import { getTeamFullName } from "../lib/teams.ts";
 
 // Default settings for calculating surplus (same as TeamsComparison uses)
 const DEFAULT_GAMES = 70;
-const DEFAULT_MINUTES = 30;
 const DEFAULT_IMPROVEMENT = 0;
 
 interface Props {
   players: Player[];
 }
 
-// Calculate surplus for a single player using default settings
+// Calculate surplus for a single player using their actual minutes
 function calculatePlayerSurplus(player: Player): number {
   // Skip free agents (no actual salary)
   if (player.actualSalary === 0) return 0;
 
   const projected = calculateSalary(
     DEFAULT_GAMES,
-    DEFAULT_MINUTES,
+    player.avgMinutes ?? 0,
     player.darko,
     DEFAULT_IMPROVEMENT
   );
@@ -44,16 +43,17 @@ function formatSurplus(surplus: number): string {
   return `-$${Math.abs(surplus).toFixed(1)}M`;
 }
 
-// Build URL for a player link (uses default settings)
-function getPlayerUrl(playerName: string): string {
-  const encoded = encodeURIComponent(playerName);
-  return `?tab=player&p=${encoded}:${DEFAULT_GAMES}:${DEFAULT_MINUTES}:${DEFAULT_IMPROVEMENT}`;
+// Build URL for a player link (uses their actual minutes)
+function getPlayerUrl(player: Player): string {
+  const encoded = encodeURIComponent(player.name);
+  const minutes = player.avgMinutes ?? 0;
+  return `?tab=player&p=${encoded}:${DEFAULT_GAMES}:${minutes}:${DEFAULT_IMPROVEMENT}`;
 }
 
 export default function Leaderboard({ players }: Props) {
-  // Filter out free agents and calculate surplus for each player
+  // Filter out free agents and players with no games this season
   const playersWithSurplus = players
-    .filter((p) => p.actualSalary > 0)
+    .filter((p) => p.actualSalary > 0 && (p.gamesPlayed ?? 0) > 0)
     .map((p) => ({
       player: p,
       surplus: calculatePlayerSurplus(p),
@@ -120,7 +120,7 @@ export default function Leaderboard({ players }: Props) {
             {mostOvervalued.map((item, index) => (
               <a
                 key={item.player.name}
-                href={getPlayerUrl(item.player.name)}
+                href={getPlayerUrl(item.player)}
                 class="leaderboard-row leaderboard-row-link"
               >
                 <span class="leaderboard-rank">{index + 1}</span>
@@ -146,7 +146,7 @@ export default function Leaderboard({ players }: Props) {
             {mostUndervalued.map((item, index) => (
               <a
                 key={item.player.name}
-                href={getPlayerUrl(item.player.name)}
+                href={getPlayerUrl(item.player)}
                 class="leaderboard-row leaderboard-row-link"
               >
                 <span class="leaderboard-rank">{index + 1}</span>

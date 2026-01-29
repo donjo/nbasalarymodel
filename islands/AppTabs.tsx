@@ -164,8 +164,9 @@ export default function AppTabs({
 
   // Callbacks to track added items (passed to child components)
   const handlePlayerAdded = (name: string) => {
+    const player = players.find((p) => p.name === name);
     const newSelections = new Map(playerSelections);
-    newSelections.set(name, getDefaultSettings());
+    newSelections.set(name, getDefaultSettings(player?.avgMinutes));
     setPlayerSelections(newSelections);
     setSearchTerm("");
     setShowDropdown(false);

@@ -187,11 +187,12 @@ export function decodeURLToState(search: string): Partial<AppState> {
 
 /**
  * Get default settings for a player
+ * Uses player's actual avgMinutes if provided, otherwise 0
  */
-export function getDefaultSettings(): PlayerSettings {
+export function getDefaultSettings(avgMinutes?: number): PlayerSettings {
   return {
     games: DEFAULT_GAMES,
-    minutes: DEFAULT_MINUTES,
+    minutes: avgMinutes ?? 0,
     improvement: DEFAULT_IMPROVEMENT,
   };
 }

@@ -36,9 +36,10 @@ function formatSalary(salary: number): string {
 }
 
 // Calculate a player's projected contract value using the salary model
+// Uses player's actual avgMinutes when no settings provided, or 0 if no stats
 function getProjectedValue(player: Player, settings?: PlayerSettings): number {
   const games = settings?.games ?? DEFAULT_GAMES;
-  const minutes = settings?.minutes ?? DEFAULT_MINUTES;
+  const minutes = settings?.minutes ?? (player.avgMinutes ?? 0);
   const improvement = settings?.improvement ?? 0;
 
   const result = calculateSalary(games, minutes, player.darko, improvement);

@@ -15,7 +15,6 @@ import {
 import {
   type PlayerSettings,
   DEFAULT_GAMES,
-  DEFAULT_MINUTES,
 } from "../lib/url.ts";
 
 interface Props {
@@ -120,10 +119,10 @@ interface PlayerPreviewCardProps {
 }
 
 function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
-  // Calculate projected value with default settings
+  // Calculate projected value using player's actual minutes
   const projected = calculateSalary(
     DEFAULT_GAMES,
-    DEFAULT_MINUTES,
+    player.avgMinutes ?? 0,
     player.darko,
     0 // no improvement adjustment
   );
