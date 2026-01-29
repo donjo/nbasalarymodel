@@ -11,6 +11,8 @@ export interface Player {
   darko: number;
   actualSalary: number;
   futureSalaries: Record<string, number>;
+  avgMinutes?: number;
+  gamesPlayed?: number;
 }
 
 /**

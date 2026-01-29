@@ -11,6 +11,7 @@ import TeamsComparison from "./TeamsComparison.tsx";
 import Leaderboard from "./Leaderboard.tsx";
 import type { Player } from "../lib/players.ts";
 import { getTeamFullName, getUniqueTeamCodes } from "../lib/teams.ts";
+import { playerNameMatchesSearch } from "../lib/name-utils.ts";
 import {
   encodeStateToURL,
   decodeURLToState,
@@ -133,12 +134,13 @@ export default function AppTabs({
   const allTeamCodes = getUniqueTeamCodes();
 
   // Filter players based on search
+  // Uses smart matching that handles accents, nicknames, and suffixes
   const getFilteredPlayers = (term: string): Player[] => {
     if (!term) return [];
     return players
       .filter(
         (p) =>
-          p.name.toLowerCase().includes(term.toLowerCase()) &&
+          playerNameMatchesSearch(p.name, term) &&
           !addedPlayerNames.has(p.name)
       )
       .slice(0, 10);

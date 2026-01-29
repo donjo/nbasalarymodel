@@ -11,7 +11,8 @@
     "start": "deno serve -A --unstable-kv _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "deno run -A --unstable-kv scripts/seed-kv.ts",
-    "check-kv": "deno run -A --unstable-kv scripts/check-kv.ts"
+    "check-kv": "deno run -A --unstable-kv scripts/check-kv.ts",
+    "merge-stats": "deno run -A --unstable-kv scripts/merge-stats.ts"
   },
   "lint": {
     "rules": {
