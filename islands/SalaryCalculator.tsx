@@ -119,9 +119,9 @@ interface PlayerPreviewCardProps {
 }
 
 function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
-  // Calculate projected value using player's actual minutes
+  // Calculate projected value using player's projected games and actual minutes
   const projected = calculateSalary(
-    DEFAULT_GAMES,
+    player.projectedGames ?? DEFAULT_GAMES,
     player.avgMinutes ?? 0,
     player.darko,
     0 // no improvement adjustment

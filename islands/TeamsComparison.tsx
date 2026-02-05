@@ -36,9 +36,9 @@ function formatSalary(salary: number): string {
 }
 
 // Calculate a player's projected contract value using the salary model
-// Uses player's actual avgMinutes when no settings provided, or 0 if no stats
+// Uses player's projectedGames (or DEFAULT_GAMES) and actual avgMinutes when no settings provided
 function getProjectedValue(player: Player, settings?: PlayerSettings): number {
-  const games = settings?.games ?? DEFAULT_GAMES;
+  const games = settings?.games ?? (player.projectedGames ?? DEFAULT_GAMES);
   const minutes = settings?.minutes ?? (player.avgMinutes ?? 0);
   const improvement = settings?.improvement ?? 0;
 
@@ -219,10 +219,10 @@ function TeamCard({
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   // Get settings for a player (returns defaults if not customized)
-  // Uses the player's actual avgMinutes, or 0 if not in current NBA stats
+  // Uses the player's projectedGames (or DEFAULT_GAMES) and avgMinutes (or 0)
   const getSettings = (player: Player): PlayerSettings => {
     return playerSettings.get(player.name) || {
-      games: DEFAULT_GAMES,
+      games: player.projectedGames ?? DEFAULT_GAMES,
       minutes: player.avgMinutes ?? 0,
       improvement: 0,
     };
@@ -331,7 +331,7 @@ function TeamCard({
                 >
                   <span class="roster-player-name roster-player-clickable">
                     <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span> {player.name}
-                    <span class={`roster-player-settings ${settings.games !== DEFAULT_GAMES || settings.minutes !== (player.avgMinutes ?? 0) ? "roster-player-settings-modified" : ""}`}>
+                    <span class={`roster-player-settings ${settings.games !== (player.projectedGames ?? DEFAULT_GAMES) || settings.minutes !== (player.avgMinutes ?? 0) ? "roster-player-settings-modified" : ""}`}>
                       G — {settings.games} · MP — {settings.minutes}
                     </span>
                   </span>

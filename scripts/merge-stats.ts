@@ -11,6 +11,7 @@
 import { getPlayers, setPlayers } from "../lib/players-data.ts";
 import { NICKNAME_MAP, normalizeName } from "../lib/name-utils.ts";
 import { normalizeTeamCode } from "../lib/teams.ts";
+import { calculateSeasonProgress, calculateProjectedGames } from "../lib/games.ts";
 import type { Player } from "../lib/types.ts";
 
 /**
@@ -21,6 +22,7 @@ interface NbaStats {
     avgMinutes: number;
     gamesPlayed: number;
     team: string;
+    recentGamesPlayed: number;
   };
 }
 
@@ -36,13 +38,19 @@ async function updateFallbackFile(players: Player[]) {
   // Generate the new file content
   const playerLines = players.map((p) => {
     const futureSalaries = JSON.stringify(p.futureSalaries);
-    // Include avgMinutes and gamesPlayed if they exist
+    // Include avgMinutes, gamesPlayed, recentGamesPlayed, and projectedGames if they exist
     const extras: string[] = [];
     if (p.avgMinutes !== undefined) {
       extras.push(`avgMinutes: ${p.avgMinutes}`);
     }
     if (p.gamesPlayed !== undefined) {
       extras.push(`gamesPlayed: ${p.gamesPlayed}`);
+    }
+    if (p.recentGamesPlayed !== undefined) {
+      extras.push(`recentGamesPlayed: ${p.recentGamesPlayed}`);
+    }
+    if (p.projectedGames !== undefined) {
+      extras.push(`projectedGames: ${p.projectedGames}`);
     }
     const extrasStr = extras.length > 0 ? `, ${extras.join(", ")}` : "";
     return `{ name: "${p.name}", team: "${p.team}", age: ${p.age}, darko: ${p.darko}, actualSalary: ${p.actualSalary}, futureSalaries: ${futureSalaries}${extrasStr} }`;
@@ -93,7 +101,7 @@ async function main() {
   // Build a lookup map with normalized names for easier matching
   const statsLookup = new Map<
     string,
-    { avgMinutes: number; gamesPlayed: number; team: string }
+    { avgMinutes: number; gamesPlayed: number; team: string; recentGamesPlayed: number }
   >();
   for (const [name, stats] of Object.entries(nbaStats)) {
     const normalized = normalizeName(name);
@@ -114,6 +122,12 @@ async function main() {
   // Get current players from KV
   const { players } = await getPlayers();
   console.log(`   Found ${players.length} players in KV database`);
+
+  // Calculate season progress from all players' games played
+  // This tells us how far into the season we are (e.g., 45 games in)
+  const allGamesPlayed = Object.values(nbaStats).map((s) => s.gamesPlayed);
+  const seasonProgress = calculateSeasonProgress(allGamesPlayed);
+  console.log(`   Season progress: ${seasonProgress} games`);
 
   // Track matching results for reporting
   let matchedCount = 0;
@@ -137,11 +151,21 @@ async function main() {
         });
       }
 
+      // Calculate projected full-season games based on participation rate
+      // If player is currently healthy (playing recently), use optimistic projection
+      const projectedGames = calculateProjectedGames(
+        stats.gamesPlayed,
+        seasonProgress,
+        stats.recentGamesPlayed
+      );
+
       return {
         ...player,
         team: stats.team || player.team, // Update team if available
         avgMinutes: stats.avgMinutes,
         gamesPlayed: stats.gamesPlayed,
+        recentGamesPlayed: stats.recentGamesPlayed,
+        projectedGames,
       };
     } else {
       unmatchedPlayers.push(player.name);

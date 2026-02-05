@@ -13,6 +13,8 @@ export interface Player {
   futureSalaries: Record<string, number>;
   avgMinutes?: number;
   gamesPlayed?: number;
+  recentGamesPlayed?: number;
+  projectedGames?: number;
 }
 
 /**

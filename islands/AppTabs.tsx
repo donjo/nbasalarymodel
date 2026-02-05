@@ -166,7 +166,7 @@ export default function AppTabs({
   const handlePlayerAdded = (name: string) => {
     const player = players.find((p) => p.name === name);
     const newSelections = new Map(playerSelections);
-    newSelections.set(name, getDefaultSettings(player?.avgMinutes));
+    newSelections.set(name, getDefaultSettings(player?.avgMinutes, player?.projectedGames));
     setPlayerSelections(newSelections);
     setSearchTerm("");
     setShowDropdown(false);

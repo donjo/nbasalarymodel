@@ -11,6 +11,7 @@ import { calculateSalary } from "../lib/salary.ts";
 import { getTeamFullName } from "../lib/teams.ts";
 
 // Default settings for calculating surplus (same as TeamsComparison uses)
+// Note: We now prefer player.projectedGames when available
 const DEFAULT_GAMES = 70;
 const DEFAULT_IMPROVEMENT = 0;
 
@@ -18,13 +19,13 @@ interface Props {
   players: Player[];
 }
 
-// Calculate surplus for a single player using their actual minutes
+// Calculate surplus for a single player using their projected games and actual minutes
 function calculatePlayerSurplus(player: Player): number {
   // Skip free agents (no actual salary)
   if (player.actualSalary === 0) return 0;
 
   const projected = calculateSalary(
-    DEFAULT_GAMES,
+    player.projectedGames ?? DEFAULT_GAMES,
     player.avgMinutes ?? 0,
     player.darko,
     DEFAULT_IMPROVEMENT
@@ -43,11 +44,12 @@ function formatSurplus(surplus: number): string {
   return `-$${Math.abs(surplus).toFixed(1)}M`;
 }
 
-// Build URL for a player link (uses their actual minutes)
+// Build URL for a player link (uses their projected games and actual minutes)
 function getPlayerUrl(player: Player): string {
   const encoded = encodeURIComponent(player.name);
+  const games = player.projectedGames ?? DEFAULT_GAMES;
   const minutes = player.avgMinutes ?? 0;
-  return `?tab=player&p=${encoded}:${DEFAULT_GAMES}:${minutes}:${DEFAULT_IMPROVEMENT}`;
+  return `?tab=player&p=${encoded}:${games}:${minutes}:${DEFAULT_IMPROVEMENT}`;
 }
 
 export default function Leaderboard({ players }: Props) {
