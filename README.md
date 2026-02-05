@@ -1,8 +1,87 @@
 # nbasalarymodel
 
 > Originally created by [Stephen Noh](https://github.com/StephenNoh/nbasalarymodel). This is a personal fork with modifications.
->
-> These are his original readme notes below.
+
+## Getting Started
+
+### Prerequisites
+
+- [Deno](https://deno.land/) - JavaScript/TypeScript runtime
+- [UV](https://github.com/astral-sh/uv) - Python package manager (for the stats fetch script)
+
+### Development
+
+```bash
+# Start the development server
+deno task dev
+
+# Build for production
+deno task build
+
+# Start production server
+deno task start
+```
+
+## Scripts
+
+### Database Management
+
+**Seed the database** - Populates the Deno KV database with initial player data:
+
+```bash
+deno task seed
+```
+
+**Check the database** - Inspect what's currently in the KV database:
+
+```bash
+deno task check-kv
+```
+
+### Updating Player Stats
+
+To update player statistics (minutes per game, games played) and team assignments from the NBA API, run these two commands in order:
+
+**Step 1: Fetch fresh stats from the NBA API**
+
+```bash
+uv run python scripts/fetch_nba_stats.py
+```
+
+This creates/updates `scripts/nba_stats.json` with current season data including average minutes, games played, and team assignments for all NBA players.
+
+**Step 2: Merge the stats into your database**
+
+```bash
+deno task merge-stats
+```
+
+This reads the JSON file and updates:
+- Player stats (avgMinutes, gamesPlayed)
+- Team assignments (detects trades/signings and logs any changes)
+
+You'll see output showing how many players matched and any team changes detected:
+
+```
+🏀 Merging NBA stats into KV database...
+   Loaded 650 players from NBA API
+   Found 550 players in KV database
+
+✅ Merge complete!
+   Matched: 487 players
+   Unmatched: 63 players
+
+🔄 Team changes detected: 3
+   Dejounte Murray: ATL → NOP
+   Terry Rozier: CHO → MIA
+   OG Anunoby: TOR → NYK
+```
+
+---
+
+## About the Model
+
+> These are Stephen Noh's original readme notes below.
 
 This is a salary model that I built for NBA players that projects current year salary + salary five years into the future. Here is a methodology of how it works. 
 

@@ -46,7 +46,8 @@ def fetch_player_stats():
         player_name = player['PLAYER_NAME']
         result[player_name] = {
             'avgMinutes': round(player['MIN'], 1),
-            'gamesPlayed': player['GP']
+            'gamesPlayed': player['GP'],
+            'team': player['TEAM_ABBREVIATION']
         }
 
     print(f"   Found {len(result)} players")

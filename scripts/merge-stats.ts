@@ -10,6 +10,7 @@
 
 import { getPlayers, setPlayers } from "../lib/players-data.ts";
 import { NICKNAME_MAP, normalizeName } from "../lib/name-utils.ts";
+import { normalizeTeamCode } from "../lib/teams.ts";
 import type { Player } from "../lib/types.ts";
 
 /**
@@ -19,6 +20,7 @@ interface NbaStats {
   [playerName: string]: {
     avgMinutes: number;
     gamesPlayed: number;
+    team: string;
   };
 }
 
@@ -89,15 +91,23 @@ async function main() {
   }
 
   // Build a lookup map with normalized names for easier matching
-  const statsLookup = new Map<string, { avgMinutes: number; gamesPlayed: number }>();
+  const statsLookup = new Map<
+    string,
+    { avgMinutes: number; gamesPlayed: number; team: string }
+  >();
   for (const [name, stats] of Object.entries(nbaStats)) {
     const normalized = normalizeName(name);
-    statsLookup.set(normalized, stats);
+    // Normalize the team code from NBA API format to our app's format
+    const normalizedStats = {
+      ...stats,
+      team: normalizeTeamCode(stats.team),
+    };
+    statsLookup.set(normalized, normalizedStats);
 
     // Also add nickname mappings so both names find the same stats
     const legalName = NICKNAME_MAP[normalized];
     if (legalName) {
-      statsLookup.set(legalName, stats);
+      statsLookup.set(legalName, normalizedStats);
     }
   }
 
@@ -108,6 +118,7 @@ async function main() {
   // Track matching results for reporting
   let matchedCount = 0;
   const unmatchedPlayers: string[] = [];
+  const teamChanges: { name: string; oldTeam: string; newTeam: string }[] = [];
 
   // Merge stats into player records
   const updatedPlayers: Player[] = players.map((player) => {
@@ -116,8 +127,19 @@ async function main() {
 
     if (stats) {
       matchedCount++;
+
+      // Check if the player's team has changed
+      if (stats.team && stats.team !== player.team) {
+        teamChanges.push({
+          name: player.name,
+          oldTeam: player.team,
+          newTeam: stats.team,
+        });
+      }
+
       return {
         ...player,
+        team: stats.team || player.team, // Update team if available
         avgMinutes: stats.avgMinutes,
         gamesPlayed: stats.gamesPlayed,
       };
@@ -139,6 +161,15 @@ async function main() {
   console.log(`✅ Merge complete!`);
   console.log(`   Matched: ${matchedCount} players`);
   console.log(`   Unmatched: ${unmatchedPlayers.length} players`);
+
+  // Report team changes (trades, signings, etc.)
+  if (teamChanges.length > 0) {
+    console.log("");
+    console.log(`🔄 Team changes detected: ${teamChanges.length}`);
+    for (const change of teamChanges) {
+      console.log(`   ${change.name}: ${change.oldTeam} → ${change.newTeam}`);
+    }
+  }
 
   if (unmatchedPlayers.length > 0 && unmatchedPlayers.length <= 20) {
     console.log("");

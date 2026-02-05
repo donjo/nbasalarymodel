@@ -44,6 +44,18 @@ export function getTeamFullName(code: string): string {
   return TEAM_NAMES[code] || code;
 }
 
+// Maps NBA API team codes to our app's codes
+// The NBA API uses different abbreviations for some teams
+export const NBA_API_TO_APP_CODES: Record<string, string> = {
+  PHX: "PHO", // Phoenix Suns
+  CHA: "CHO", // Charlotte Hornets
+};
+
+// Normalize a team code from the NBA API to our app's code
+export function normalizeTeamCode(apiCode: string): string {
+  return NBA_API_TO_APP_CODES[apiCode] || apiCode;
+}
+
 // Get unique team codes (without duplicates like BKN/BRK)
 export function getUniqueTeamCodes(): string[] {
   const uniqueNames = new Set<string>();
