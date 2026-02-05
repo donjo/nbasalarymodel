@@ -22,6 +22,18 @@ const FEATURED_TEAM_CODES = [
 ];
 
 /**
+ * Format a date string (YYYY-MM-DD) to a readable format like "Feb 5, 2026"
+ */
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr + "T00:00:00"); // Add time to avoid timezone issues
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
  * Home page component (async server component)
  *
  * Fresh 2.x supports async components that fetch data server-side.
@@ -60,7 +72,7 @@ export default async function Home() {
           >
             DARKO
           </a>
-          {" · "}Updated {metadata.lastUpdated}{" · "}
+          {" · "}
           <a
             href="https://github.com/StephenNoh/nbasalarymodel/blob/main/README.md"
             target="_blank"
@@ -69,6 +81,35 @@ export default async function Home() {
           >
             Methodology
           </a>
+        </p>
+        <p class="app-meta app-dates">
+          {metadata.darkoUpdated && (
+            <>
+              DARKO updated{" "}
+              <strong>{formatDate(metadata.darkoUpdated)}</strong>
+            </>
+          )}
+          {metadata.darkoUpdated && metadata.playerStatsUpdated && (
+            <span class="date-separator" />
+          )}
+          {metadata.playerStatsUpdated && (
+            <>
+              Player data updated{" "}
+              <strong>{formatDate(metadata.playerStatsUpdated)}</strong>
+            </>
+          )}
+          {(metadata.darkoUpdated || metadata.playerStatsUpdated) &&
+            metadata.salaryModelUpdated && <span class="date-separator" />}
+          {metadata.salaryModelUpdated && (
+            <>
+              Salary model updated{" "}
+              <strong>{formatDate(metadata.salaryModelUpdated)}</strong>
+            </>
+          )}
+          {/* Fallback to old format if no specific dates are set */}
+          {!metadata.darkoUpdated &&
+            !metadata.playerStatsUpdated &&
+            !metadata.salaryModelUpdated && <>Updated {metadata.lastUpdated}</>}
         </p>
       </header>
 

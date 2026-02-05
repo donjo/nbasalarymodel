@@ -13,6 +13,11 @@
 
 import { getKv, KV_KEYS } from "./kv.ts";
 import { PLAYER_DATA } from "./players.ts";
+import {
+  DARKO_UPDATED,
+  PLAYER_STATS_UPDATED,
+  SALARY_MODEL_UPDATED,
+} from "./metadata.ts";
 import type { DataMetadata, Player } from "./types.ts";
 
 // Maximum players per batch (keeps each value under 64KB limit)
@@ -44,6 +49,9 @@ export async function getPlayers(): Promise<PlayersResult> {
       metadata: {
         lastUpdated: "1/21/26",
         source: "fallback",
+        darkoUpdated: DARKO_UPDATED,
+        playerStatsUpdated: PLAYER_STATS_UPDATED,
+        salaryModelUpdated: SALARY_MODEL_UPDATED,
       },
     };
   }
@@ -58,6 +66,9 @@ export async function getPlayers(): Promise<PlayersResult> {
       metadata: {
         lastUpdated: "1/21/26",
         source: "fallback",
+        darkoUpdated: DARKO_UPDATED,
+        playerStatsUpdated: PLAYER_STATS_UPDATED,
+        salaryModelUpdated: SALARY_MODEL_UPDATED,
       },
     };
   }
@@ -87,23 +98,44 @@ export async function getPlayers(): Promise<PlayersResult> {
     metadata: {
       lastUpdated: "1/21/26",
       source: "fallback",
+      darkoUpdated: DARKO_UPDATED,
+      playerStatsUpdated: PLAYER_STATS_UPDATED,
+      salaryModelUpdated: SALARY_MODEL_UPDATED,
     },
   };
+}
+
+/**
+ * Options for updating metadata when saving players
+ */
+interface SetPlayersOptions {
+  /** Update the DARKO date (from CSV filename) */
+  darkoUpdated?: string;
+  /** Update the player stats date (from NBA API sync) */
+  playerStatsUpdated?: string;
+  /** Update the salary model date */
+  salaryModelUpdated?: string;
 }
 
 /**
  * Saves player data to KV with metadata
  *
  * This function stores the player data in batches (to stay under
- * KV's 64KB limit) and updates the metadata with the current timestamp.
- * Used by the seed script.
+ * KV's 64KB limit) and updates the metadata. Existing metadata fields
+ * are preserved unless explicitly updated via options.
  */
-export async function setPlayers(players: Player[]): Promise<void> {
+export async function setPlayers(
+  players: Player[],
+  options: SetPlayersOptions = {}
+): Promise<void> {
   const kv = await getKv();
 
   if (!kv) {
     throw new Error("Deno KV is not available. Make sure to run with --unstable-kv flag.");
   }
+
+  // Get existing metadata to preserve fields we're not updating
+  const existingMetadata = await kv.get<DataMetadata>(KV_KEYS.METADATA);
 
   // Split players into batches
   const batches: Player[][] = [];
@@ -111,7 +143,11 @@ export async function setPlayers(players: Player[]): Promise<void> {
     batches.push(players.slice(i, i + BATCH_SIZE));
   }
 
+  // Build metadata, preserving existing values and applying updates
   const metadata: DataMetadata & { batchCount: number } = {
+    // Preserve existing values
+    ...existingMetadata.value,
+    // Always update these
     lastUpdated: new Date().toLocaleDateString("en-US", {
       month: "numeric",
       day: "numeric",
@@ -119,6 +155,10 @@ export async function setPlayers(players: Player[]): Promise<void> {
     }),
     source: "kv",
     batchCount: batches.length,
+    // Apply specific updates from options
+    ...(options.darkoUpdated && { darkoUpdated: options.darkoUpdated }),
+    ...(options.playerStatsUpdated && { playerStatsUpdated: options.playerStatsUpdated }),
+    ...(options.salaryModelUpdated && { salaryModelUpdated: options.salaryModelUpdated }),
   };
 
   // Store each batch separately

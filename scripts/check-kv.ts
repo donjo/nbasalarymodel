@@ -29,6 +29,15 @@ if (metadataEntry.value) {
   if (metadataEntry.value.batchCount) {
     console.log(`   Batches: ${metadataEntry.value.batchCount}`);
   }
+  if (metadataEntry.value.darkoUpdated) {
+    console.log(`   DARKO Updated: ${metadataEntry.value.darkoUpdated}`);
+  }
+  if (metadataEntry.value.playerStatsUpdated) {
+    console.log(`   Player Stats Updated: ${metadataEntry.value.playerStatsUpdated}`);
+  }
+  if (metadataEntry.value.salaryModelUpdated) {
+    console.log(`   Salary Model Updated: ${metadataEntry.value.salaryModelUpdated}`);
+  }
 } else {
   console.log("📋 Metadata: (not found)");
 }

@@ -20,11 +20,18 @@ export interface Player {
 /**
  * Metadata about the data source
  *
- * Tracks when the data was last updated and where it came from
- * (either from KV storage or the hardcoded fallback).
+ * Tracks when different data sources were last updated and where
+ * the data came from (either from KV storage or the hardcoded fallback).
  */
 export interface DataMetadata {
+  /** @deprecated Use specific date fields instead */
   lastUpdated: string;
   source: "kv" | "fallback";
   batchCount?: number;
+  /** Date of the DARKO CSV file (from filename), e.g. "2026-02-05" */
+  darkoUpdated?: string;
+  /** Date when player stats were last synced from NBA API */
+  playerStatsUpdated?: string;
+  /** Date when the salary model data was last updated */
+  salaryModelUpdated?: string;
 }
