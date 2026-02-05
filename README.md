@@ -77,6 +77,42 @@ You'll see output showing how many players matched and any team changes detected
    OG Anunoby: TOR → NYK
 ```
 
+### Updating DARKO Values
+
+[DARKO](https://apanalytics.shinyapps.io/DARKO/) is the player impact metric used to calculate salaries. Since DARKO doesn't have a public API, updating these values is a two-step manual process:
+
+**Step 1: Download the DARKO CSV**
+
+1. Go to https://apanalytics.shinyapps.io/DARKO/
+2. Click the "Download data" button
+3. Save the file to the `data/darko/` folder (keep the default filename with the date, like `DARKO_player_talent_2026-02-05.csv`)
+
+The folder keeps historical downloads, which could enable future features like showing DARKO trends over time.
+
+**Step 2: Merge the DARKO values into your database**
+
+```bash
+deno task merge-darko
+```
+
+The script automatically finds the most recent CSV (by date in the filename) and updates player DARKO values. You'll see output showing which players had notable changes:
+
+```
+🏀 Merging DARKO data...
+   Using: data/darko/DARKO_player_talent_2026-02-05.csv
+   Data date: 2026-02-05
+   Found 526 players in CSV
+   Found 535 players in database
+
+✅ Merge complete!
+   Matched: 529 players
+   Updated: 45 players with changed DARKO values
+
+   Notable changes:
+     Nikola Jokic: 6.75 → 6.71 (↓ -0.04)
+     Victor Wembanyama: 5.46 → 5.16 (↓ -0.30)
+```
+
 ---
 
 ## About the Model
