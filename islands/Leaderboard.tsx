@@ -9,11 +9,7 @@
 import type { Player } from "../lib/players.ts";
 import { calculateSalary } from "../lib/salary.ts";
 import { getTeamFullName } from "../lib/teams.ts";
-
-// Default settings for calculating surplus (same as TeamsComparison uses)
-// Note: We now prefer player.projectedGames when available
-const DEFAULT_GAMES = 70;
-const DEFAULT_IMPROVEMENT = 0;
+import { getPlayerDefaults } from "../lib/url.ts";
 
 interface Props {
   players: Player[];
@@ -24,11 +20,12 @@ function calculatePlayerSurplus(player: Player): number {
   // Skip free agents (no actual salary)
   if (player.actualSalary === 0) return 0;
 
+  const defaults = getPlayerDefaults(player);
   const projected = calculateSalary(
-    player.projectedGames ?? DEFAULT_GAMES,
-    player.avgMinutes ?? 0,
+    defaults.games,
+    defaults.minutes,
     player.darko,
-    DEFAULT_IMPROVEMENT
+    defaults.improvement
   );
 
   // Handle "Minimum Salary" case - assume minimum is ~$2M
@@ -47,19 +44,22 @@ function formatSurplus(surplus: number): string {
 // Build URL for a player link (uses their projected games and actual minutes)
 function getPlayerUrl(player: Player): string {
   const encoded = encodeURIComponent(player.name);
-  const games = player.projectedGames ?? DEFAULT_GAMES;
-  const minutes = player.avgMinutes ?? 0;
-  return `?tab=player&p=${encoded}:${games}:${minutes}:${DEFAULT_IMPROVEMENT}`;
+  const defaults = getPlayerDefaults(player);
+  return `?tab=player&p=${encoded}:${defaults.games}:${defaults.minutes}:${defaults.improvement}`;
 }
 
 export default function Leaderboard({ players }: Props) {
-  // Filter out free agents and players with no games this season
-  const playersWithSurplus = players
-    .filter((p) => p.actualSalary > 0 && (p.gamesPlayed ?? 0) > 0)
+  // All paid players — used for team totals so they match the Team view
+  const allPaidPlayers = players
+    .filter((p) => p.actualSalary > 0)
     .map((p) => ({
       player: p,
       surplus: calculatePlayerSurplus(p),
     }));
+
+  // Player rankings also require games played (0-game players don't have meaningful stats)
+  const playersWithSurplus = allPaidPlayers
+    .filter(({ player }) => (player.gamesPlayed ?? 0) > 0);
 
   // Sort for most overvalued (most negative surplus)
   const mostOvervalued = [...playersWithSurplus]
@@ -71,11 +71,11 @@ export default function Leaderboard({ players }: Props) {
     .sort((a, b) => b.surplus - a.surplus)
     .slice(0, 10);
 
-  // Calculate team totals by grouping players
+  // Calculate team totals by grouping ALL paid players (including those with 0 games)
   // Use the full team name to handle alternate codes (BKN/BRK, CHO/CHA)
   const teamSurplusMap = new Map<string, { code: string; totalSurplus: number; playerCount: number }>();
 
-  playersWithSurplus.forEach(({ player, surplus }) => {
+  allPaidPlayers.forEach(({ player, surplus }) => {
     const fullName = getTeamFullName(player.team);
     const existing = teamSurplusMap.get(fullName);
     if (existing) {

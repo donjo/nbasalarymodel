@@ -8,6 +8,8 @@
  * - tp: Team player custom settings (name:games:minutes:improvement, comma-separated)
  */
 
+import type { Player } from "./types.ts";
+
 // Player settings that can be customized via sliders
 export interface PlayerSettings {
   games: number;
@@ -15,7 +17,7 @@ export interface PlayerSettings {
   improvement: number;
 }
 
-// Default values (must match those in SalaryCalculator and TeamsComparison)
+// Default values (used across all views via getPlayerDefaults)
 export const DEFAULT_GAMES = 70;
 export const DEFAULT_MINUTES = 30;
 export const DEFAULT_IMPROVEMENT = 0;
@@ -195,5 +197,20 @@ export function getDefaultSettings(avgMinutes?: number, projectedGames?: number)
     games: projectedGames ?? DEFAULT_GAMES,
     minutes: avgMinutes ?? 0,
     improvement: DEFAULT_IMPROVEMENT,
+  };
+}
+
+/**
+ * Get resolved settings for a player, with optional user overrides
+ * Falls back to player's own projectedGames/avgMinutes, then to global defaults
+ */
+export function getPlayerDefaults(
+  player: Player,
+  overrides?: Partial<PlayerSettings>,
+): PlayerSettings {
+  return {
+    games: overrides?.games ?? player.projectedGames ?? DEFAULT_GAMES,
+    minutes: overrides?.minutes ?? player.avgMinutes ?? 0,
+    improvement: overrides?.improvement ?? DEFAULT_IMPROVEMENT,
   };
 }

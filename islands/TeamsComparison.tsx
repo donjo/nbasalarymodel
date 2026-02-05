@@ -17,7 +17,7 @@ import {
 import {
   type PlayerSettings,
   DEFAULT_GAMES,
-  DEFAULT_MINUTES,
+  getPlayerDefaults,
 } from "../lib/url.ts";
 
 interface Props {
@@ -36,13 +36,10 @@ function formatSalary(salary: number): string {
 }
 
 // Calculate a player's projected contract value using the salary model
-// Uses player's projectedGames (or DEFAULT_GAMES) and actual avgMinutes when no settings provided
 function getProjectedValue(player: Player, settings?: PlayerSettings): number {
-  const games = settings?.games ?? (player.projectedGames ?? DEFAULT_GAMES);
-  const minutes = settings?.minutes ?? (player.avgMinutes ?? 0);
-  const improvement = settings?.improvement ?? 0;
+  const resolved = getPlayerDefaults(player, settings);
 
-  const result = calculateSalary(games, minutes, player.darko, improvement);
+  const result = calculateSalary(resolved.games, resolved.minutes, player.darko, resolved.improvement);
   // "Minimum Salary" returns as a string, treat as ~2M for calculation purposes
   if (result === "Minimum Salary") return 2.0;
   return parseFloat(result);
@@ -218,14 +215,9 @@ function TeamCard({
   // Track which player is expanded (null = none)
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
-  // Get settings for a player (returns defaults if not customized)
-  // Uses the player's projectedGames (or DEFAULT_GAMES) and avgMinutes (or 0)
+  // Get settings for a player (returns custom settings or player defaults)
   const getSettings = (player: Player): PlayerSettings => {
-    return playerSettings.get(player.name) || {
-      games: player.projectedGames ?? DEFAULT_GAMES,
-      minutes: player.avgMinutes ?? 0,
-      improvement: 0,
-    };
+    return playerSettings.get(player.name) || getPlayerDefaults(player);
   };
 
   // Update settings for a player (calls parent callback)

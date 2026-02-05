@@ -14,7 +14,7 @@ import {
 } from "../lib/salary.ts";
 import {
   type PlayerSettings,
-  DEFAULT_GAMES,
+  getPlayerDefaults,
 } from "../lib/url.ts";
 
 interface Props {
@@ -119,12 +119,13 @@ interface PlayerPreviewCardProps {
 }
 
 function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
-  // Calculate projected value using player's projected games and actual minutes
+  // Calculate projected value using player defaults
+  const defaults = getPlayerDefaults(player);
   const projected = calculateSalary(
-    player.projectedGames ?? DEFAULT_GAMES,
-    player.avgMinutes ?? 0,
+    defaults.games,
+    defaults.minutes,
     player.darko,
-    0 // no improvement adjustment
+    defaults.improvement
   );
   const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
 
