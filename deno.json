@@ -13,7 +13,8 @@
     "seed": "deno run -A --unstable-kv scripts/seed-kv.ts",
     "check-kv": "deno run -A --unstable-kv scripts/check-kv.ts",
     "merge-stats": "deno run -A --unstable-kv scripts/merge-stats.ts",
-    "merge-darko": "deno run -A --unstable-kv scripts/merge-darko.ts"
+    "merge-darko": "deno run -A --unstable-kv scripts/merge-darko.ts",
+    "update-stats": "bash scripts/update-stats.sh"
   },
   "lint": {
     "rules": {

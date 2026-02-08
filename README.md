@@ -40,7 +40,13 @@ deno task check-kv
 
 ### Updating Player Stats
 
-To update player statistics (minutes per game, games played) and team assignments from the NBA API, run these two commands in order:
+The quickest way to update stats is the combined command, which fetches from the NBA API and merges into the database in one step:
+
+```bash
+deno task update-stats
+```
+
+Or you can run the two steps individually:
 
 **Step 1: Fetch fresh stats from the NBA API**
 
