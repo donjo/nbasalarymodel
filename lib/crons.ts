@@ -16,6 +16,7 @@ import { Sandbox, Snapshot } from "@deno/sandbox";
 import { mergeNbaStats } from "./merge-stats-core.ts";
 import type { NbaStats } from "./merge-stats-core.ts";
 import { getPlayers, setPlayers } from "./players-data.ts";
+import { FETCH_NBA_STATS_PY } from "./fetch-nba-stats-script.ts";
 
 // Snapshot with Python + nba_api pre-installed (created by test-sandbox.ts --create-snapshot)
 const SNAPSHOT_SLUG = "nba-stats-python";
@@ -133,15 +134,12 @@ if (typeof Deno.cron === "function") {
 
       // Step 4: Upload the Python script into the sandbox
       console.log("[cron] Step 4/6: Uploading Python script...");
-      const scriptContent = await Deno.readTextFile(
-        new URL("../scripts/fetch_nba_stats.py", import.meta.url),
-      );
       console.log(
-        `[cron] Read script from bundle: ${scriptContent.length} chars`,
+        `[cron] Script is ${FETCH_NBA_STATS_PY.length} chars`,
       );
       await sandbox.fs.writeTextFile(
         "/tmp/fetch_nba_stats.py",
-        scriptContent,
+        FETCH_NBA_STATS_PY,
       );
       console.log("[cron] Step 4/6: Script uploaded OK");
 
