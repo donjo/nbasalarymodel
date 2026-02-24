@@ -5,26 +5,17 @@
  * and merges the avgMinutes and gamesPlayed data into existing player records
  * in the KV database.
  *
+ * The actual matching/merging logic lives in lib/merge-stats-core.ts so it
+ * can also be used by the automated cron job. This script handles file I/O,
+ * KV access, fallback file updates, and console reporting.
+ *
  * Usage: deno task merge-stats
  */
 
 import { getPlayers, setPlayers } from "../lib/players-data.ts";
-import { NICKNAME_MAP, normalizeName } from "../lib/name-utils.ts";
-import { normalizeTeamCode } from "../lib/teams.ts";
-import { calculateSeasonProgress, calculateProjectedGames } from "../lib/games.ts";
+import { mergeNbaStats } from "../lib/merge-stats-core.ts";
+import type { NbaStats } from "../lib/merge-stats-core.ts";
 import type { Player } from "../lib/types.ts";
-
-/**
- * Stats data structure from the Python script
- */
-interface NbaStats {
-  [playerName: string]: {
-    avgMinutes: number;
-    gamesPlayed: number;
-    team: string;
-    recentGamesPlayed: number;
-  };
-}
 
 /**
  * Update the fallback players.ts file with merged data
@@ -89,7 +80,7 @@ async function updateMetadataFile(playerStatsDate: string) {
   // Extract current values using regex
   const darkoMatch = currentContent.match(/DARKO_UPDATED = "([^"]+)"/);
   const salaryModelMatch = currentContent.match(
-    /SALARY_MODEL_UPDATED = "([^"]+)"/
+    /SALARY_MODEL_UPDATED = "([^"]+)"/,
   );
 
   const darkoDate = darkoMatch?.[1] ?? "2026-01-21";
@@ -123,7 +114,7 @@ export const SALARY_MODEL_UPDATED = "${salaryModelDate}";
  * Main function to merge stats
  */
 async function main() {
-  console.log("🏀 Merging NBA stats into KV database...");
+  console.log("Merging NBA stats into KV database...");
 
   // Read the stats JSON file created by the Python script
   const statsPath = new URL("./nba_stats.json", import.meta.url);
@@ -132,129 +123,65 @@ async function main() {
   try {
     const statsText = await Deno.readTextFile(statsPath);
     nbaStats = JSON.parse(statsText);
-    console.log(`   Loaded ${Object.keys(nbaStats).length} players from NBA API`);
+    console.log(
+      `   Loaded ${Object.keys(nbaStats).length} players from NBA API`,
+    );
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      console.error("❌ nba_stats.json not found!");
+      console.error("nba_stats.json not found!");
       console.log("   Run 'python scripts/fetch_nba_stats.py' first");
       Deno.exit(1);
     }
     throw error;
   }
 
-  // Build a lookup map with normalized names for easier matching
-  const statsLookup = new Map<
-    string,
-    { avgMinutes: number; gamesPlayed: number; team: string; recentGamesPlayed: number }
-  >();
-  for (const [name, stats] of Object.entries(nbaStats)) {
-    const normalized = normalizeName(name);
-    // Normalize the team code from NBA API format to our app's format
-    const normalizedStats = {
-      ...stats,
-      team: normalizeTeamCode(stats.team),
-    };
-    statsLookup.set(normalized, normalizedStats);
-
-    // Also add nickname mappings so both names find the same stats
-    const legalName = NICKNAME_MAP[normalized];
-    if (legalName) {
-      statsLookup.set(legalName, normalizedStats);
-    }
-  }
-
   // Get current players from KV
   const { players } = await getPlayers();
   console.log(`   Found ${players.length} players in KV database`);
 
-  // Calculate season progress from all players' games played
-  // This tells us how far into the season we are (e.g., 45 games in)
-  const allGamesPlayed = Object.values(nbaStats).map((s) => s.gamesPlayed);
-  const seasonProgress = calculateSeasonProgress(allGamesPlayed);
-  console.log(`   Season progress: ${seasonProgress} games`);
-
-  // Track matching results for reporting
-  let matchedCount = 0;
-  const unmatchedPlayers: string[] = [];
-  const teamChanges: { name: string; oldTeam: string; newTeam: string }[] = [];
-
-  // Merge stats into player records
-  const updatedPlayers: Player[] = players.map((player) => {
-    const normalizedName = normalizeName(player.name);
-    const stats = statsLookup.get(normalizedName);
-
-    if (stats) {
-      matchedCount++;
-
-      // Check if the player's team has changed
-      if (stats.team && stats.team !== player.team) {
-        teamChanges.push({
-          name: player.name,
-          oldTeam: player.team,
-          newTeam: stats.team,
-        });
-      }
-
-      // Calculate projected full-season games based on participation rate
-      // If player is currently healthy (playing recently), use optimistic projection
-      const projectedGames = calculateProjectedGames(
-        stats.gamesPlayed,
-        seasonProgress,
-        stats.recentGamesPlayed
-      );
-
-      return {
-        ...player,
-        team: stats.team || player.team, // Update team if available
-        avgMinutes: stats.avgMinutes,
-        gamesPlayed: stats.gamesPlayed,
-        recentGamesPlayed: stats.recentGamesPlayed,
-        projectedGames,
-      };
-    } else {
-      unmatchedPlayers.push(player.name);
-      return player; // Keep original without new fields
-    }
-  });
+  // Use the shared merge function to match and merge stats
+  const result = mergeNbaStats(players, nbaStats);
 
   // Save updated players back to KV
   // Record today's date as when player stats were updated
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-  await setPlayers(updatedPlayers, { playerStatsUpdated: today });
+  await setPlayers(result.updatedPlayers, { playerStatsUpdated: today });
 
   // Also update the fallback file (lib/players.ts) for Vite dev mode
   // Since Vite doesn't have access to Deno KV, we need the fallback to have the data too
-  await updateFallbackFile(updatedPlayers);
+  await updateFallbackFile(result.updatedPlayers);
   await updateMetadataFile(today);
 
   // Report results
   console.log("");
-  console.log(`✅ Merge complete!`);
-  console.log(`   Matched: ${matchedCount} players`);
-  console.log(`   Unmatched: ${unmatchedPlayers.length} players`);
+  console.log(`Merge complete!`);
+  console.log(`   Matched: ${result.matchedCount} players`);
+  console.log(`   Unmatched: ${result.unmatchedPlayers.length} players`);
 
   // Report team changes (trades, signings, etc.)
-  if (teamChanges.length > 0) {
+  if (result.teamChanges.length > 0) {
     console.log("");
-    console.log(`🔄 Team changes detected: ${teamChanges.length}`);
-    for (const change of teamChanges) {
-      console.log(`   ${change.name}: ${change.oldTeam} → ${change.newTeam}`);
+    console.log(`Team changes detected: ${result.teamChanges.length}`);
+    for (const change of result.teamChanges) {
+      console.log(`   ${change.name}: ${change.oldTeam} -> ${change.newTeam}`);
     }
   }
 
-  if (unmatchedPlayers.length > 0 && unmatchedPlayers.length <= 20) {
+  if (
+    result.unmatchedPlayers.length > 0 && result.unmatchedPlayers.length <= 20
+  ) {
     console.log("");
     console.log("   Unmatched players:");
-    for (const name of unmatchedPlayers) {
+    for (const name of result.unmatchedPlayers) {
       console.log(`     - ${name}`);
     }
-  } else if (unmatchedPlayers.length > 20) {
+  } else if (result.unmatchedPlayers.length > 20) {
     console.log("");
     console.log(`   First 20 unmatched players:`);
-    for (const name of unmatchedPlayers.slice(0, 20)) {
+    for (const name of result.unmatchedPlayers.slice(0, 20)) {
       console.log(`     - ${name}`);
     }
-    console.log(`     ... and ${unmatchedPlayers.length - 20} more`);
+    console.log(`     ... and ${result.unmatchedPlayers.length - 20} more`);
   }
 
   console.log("");
@@ -262,6 +189,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("❌ Error:", error);
+  console.error("Error:", error);
   Deno.exit(1);
 });
