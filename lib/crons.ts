@@ -94,94 +94,121 @@ async function ensurePython(sandbox: Sandbox): Promise<void> {
 // Deno.cron is only available on Deno Deploy and when running with --unstable-cron.
 // In Vite dev mode, Deno.cron doesn't exist, so we skip registration.
 if (typeof Deno.cron === "function") {
-  Deno.cron("update nba stats", "0 10,22 * * *", {
+  Deno.cron("update nba stats", "* * * * *", {
     backoffSchedule: [60_000, 300_000, 900_000],
   }, async () => {
-    console.log("[cron] Starting NBA stats update...");
+    const startTime = Date.now();
+    console.log("[cron] === NBA STATS UPDATE STARTING ===");
 
-    // Create a sandbox — "await using" ensures cleanup when done
-    await using sandbox = await Sandbox.create();
+    try {
+      // Step 1: Create sandbox
+      console.log("[cron] Step 1/6: Creating sandbox...");
+      await using sandbox = await Sandbox.create();
+      console.log("[cron] Step 1/6: Sandbox created OK");
 
-    // Step 1: Make sure Python is available
-    await ensurePython(sandbox);
+      // Step 2: Make sure Python is available
+      console.log("[cron] Step 2/6: Checking Python...");
+      await ensurePython(sandbox);
+      console.log("[cron] Step 2/6: Python ready OK");
 
-    // Step 2: Install the nba_api package
-    console.log("[cron] Installing nba_api...");
-    const pipResult = await runInSandbox(sandbox, "pip", [
-      "install",
-      "nba_api",
-    ]);
-    if (pipResult.code !== 0) {
-      // Some sandbox images use pip3 instead of pip
-      const pip3Result = await runInSandbox(sandbox, "pip3", [
+      // Step 3: Install the nba_api package
+      console.log("[cron] Step 3/6: Installing nba_api...");
+      const pipResult = await runInSandbox(sandbox, "pip", [
         "install",
         "nba_api",
       ]);
-      if (pip3Result.code !== 0) {
-        throw new Error(`Failed to install nba_api: ${pip3Result.stderr}`);
-      }
-    }
-    console.log("[cron] nba_api installed");
-
-    // Step 3: Upload the Python script into the sandbox
-    // Read it from the deployment bundle (it's part of the deployed files)
-    const scriptContent = await Deno.readTextFile(
-      new URL("../scripts/fetch_nba_stats.py", import.meta.url),
-    );
-    await sandbox.fs.writeTextFile("/tmp/fetch_nba_stats.py", scriptContent);
-
-    // Step 4: Run the Python script
-    // The script saves its output to the same directory as itself,
-    // so the JSON will be at /tmp/nba_stats.json
-    console.log("[cron] Running fetch_nba_stats.py...");
-    const pyResult = await runInSandbox(sandbox, "python3", [
-      "/tmp/fetch_nba_stats.py",
-    ]);
-
-    if (pyResult.code !== 0) {
-      throw new Error(
-        `Python script failed (exit ${pyResult.code}): ${pyResult.stderr}`,
-      );
-    }
-    console.log(`[cron] Python output: ${pyResult.stdout.trim()}`);
-
-    // Step 5: Read the JSON output from the sandbox
-    const jsonText = await sandbox.fs.readTextFile("/tmp/nba_stats.json");
-    const nbaStats: NbaStats = JSON.parse(jsonText);
-    const playerCount = Object.keys(nbaStats).length;
-    console.log(`[cron] Fetched stats for ${playerCount} players`);
-
-    // Sanity check — the NBA has ~500+ active players
-    if (playerCount < 400) {
-      throw new Error(
-        `Only got ${playerCount} players (expected 400+). NBA API may be returning partial data.`,
-      );
-    }
-
-    // Step 6: Merge into KV using the shared merge function
-    const { players } = await getPlayers();
-    console.log(`[cron] Merging with ${players.length} existing players...`);
-
-    const result = mergeNbaStats(players, nbaStats);
-
-    // Save to KV with today's date
-    const today = new Date().toISOString().split("T")[0];
-    await setPlayers(result.updatedPlayers, { playerStatsUpdated: today });
-
-    // Log results
-    console.log(
-      `[cron] Merge complete: ${result.matchedCount} matched, ` +
-        `${result.unmatchedPlayers.length} unmatched`,
-    );
-    if (result.teamChanges.length > 0) {
-      console.log(`[cron] Team changes: ${result.teamChanges.length}`);
-      for (const change of result.teamChanges) {
+      if (pipResult.code !== 0) {
         console.log(
-          `[cron]   ${change.name}: ${change.oldTeam} -> ${change.newTeam}`,
+          `[cron] pip failed (code ${pipResult.code}), trying pip3...`,
+        );
+        console.log(`[cron] pip stderr: ${pipResult.stderr}`);
+        const pip3Result = await runInSandbox(sandbox, "pip3", [
+          "install",
+          "nba_api",
+        ]);
+        if (pip3Result.code !== 0) {
+          console.error(`[cron] pip3 stderr: ${pip3Result.stderr}`);
+          throw new Error(`Failed to install nba_api: ${pip3Result.stderr}`);
+        }
+      }
+      console.log("[cron] Step 3/6: nba_api installed OK");
+
+      // Step 4: Upload the Python script into the sandbox
+      console.log("[cron] Step 4/6: Uploading Python script...");
+      const scriptContent = await Deno.readTextFile(
+        new URL("../scripts/fetch_nba_stats.py", import.meta.url),
+      );
+      console.log(
+        `[cron] Read script from bundle: ${scriptContent.length} chars`,
+      );
+      await sandbox.fs.writeTextFile(
+        "/tmp/fetch_nba_stats.py",
+        scriptContent,
+      );
+      console.log("[cron] Step 4/6: Script uploaded OK");
+
+      // Step 5: Run the Python script and read output
+      console.log("[cron] Step 5/6: Running fetch_nba_stats.py...");
+      const pyResult = await runInSandbox(sandbox, "python3", [
+        "/tmp/fetch_nba_stats.py",
+      ]);
+      console.log(`[cron] Python exit code: ${pyResult.code}`);
+      console.log(`[cron] Python stdout: ${pyResult.stdout}`);
+      if (pyResult.stderr) {
+        console.log(`[cron] Python stderr: ${pyResult.stderr}`);
+      }
+
+      if (pyResult.code !== 0) {
+        throw new Error(
+          `Python script failed (exit ${pyResult.code}): ${pyResult.stderr}`,
         );
       }
-    }
 
-    console.log("[cron] NBA stats update complete!");
+      const jsonText = await sandbox.fs.readTextFile("/tmp/nba_stats.json");
+      const nbaStats: NbaStats = JSON.parse(jsonText);
+      const playerCount = Object.keys(nbaStats).length;
+      console.log(`[cron] Step 5/6: Fetched ${playerCount} players OK`);
+
+      if (playerCount < 400) {
+        throw new Error(
+          `Only got ${playerCount} players (expected 400+). NBA API may be returning partial data.`,
+        );
+      }
+
+      // Step 6: Merge into KV
+      console.log("[cron] Step 6/6: Merging into KV...");
+      const { players } = await getPlayers();
+      console.log(`[cron] Loaded ${players.length} existing players from KV`);
+
+      const result = mergeNbaStats(players, nbaStats);
+      console.log(
+        `[cron] Merge result: ${result.matchedCount} matched, ` +
+          `${result.unmatchedPlayers.length} unmatched`,
+      );
+
+      const today = new Date().toISOString().split("T")[0];
+      await setPlayers(result.updatedPlayers, { playerStatsUpdated: today });
+      console.log(`[cron] Step 6/6: Saved to KV with date ${today} OK`);
+
+      if (result.teamChanges.length > 0) {
+        console.log(`[cron] Team changes: ${result.teamChanges.length}`);
+        for (const change of result.teamChanges) {
+          console.log(
+            `[cron]   ${change.name}: ${change.oldTeam} -> ${change.newTeam}`,
+          );
+        }
+      }
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[cron] === NBA STATS UPDATE COMPLETE (${elapsed}s) ===`);
+    } catch (error) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.error(`[cron] === NBA STATS UPDATE FAILED (${elapsed}s) ===`);
+      console.error(`[cron] Error: ${error}`);
+      if (error instanceof Error) {
+        console.error(`[cron] Stack: ${error.stack}`);
+      }
+      throw error;
+    }
   });
 }
