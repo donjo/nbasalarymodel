@@ -12,16 +12,16 @@
  * interactive browser access that can't be automated with HTTP requests.
  */
 
-import { Sandbox } from "@deno/sandbox";
+import { Sandbox, Snapshot } from "@deno/sandbox";
 import { mergeNbaStats } from "./merge-stats-core.ts";
 import type { NbaStats } from "./merge-stats-core.ts";
 import { getPlayers, setPlayers } from "./players-data.ts";
 
+// Snapshot with Python + nba_api pre-installed (created by test-sandbox.ts --create-snapshot)
+const SNAPSHOT_SLUG = "nba-stats-python";
+
 /**
  * Run a command inside a sandbox and return the output
- *
- * This is a helper that spawns a process, waits for it to finish,
- * and returns the decoded stdout/stderr along with the exit code.
  */
 async function runInSandbox(
   sandbox: Sandbox,
@@ -42,96 +42,94 @@ async function runInSandbox(
 }
 
 /**
- * Ensure Python 3 and pip are available in the sandbox
+ * Install Python dependencies via apt-get + pip
  *
- * The sandbox microVM includes a Linux environment, but we need
- * to verify Python is installed. If not, we try installing it.
+ * Only needed when no snapshot is available. The snapshot has
+ * everything pre-installed so this step is skipped.
  */
-async function ensurePython(sandbox: Sandbox): Promise<void> {
-  const check = await runInSandbox(sandbox, "python3", ["--version"]);
-  if (check.code === 0) {
-    console.log(`[cron] Python available: ${check.stdout.trim()}`);
-    return;
-  }
-
-  // Python not found — try installing it
-  console.log("[cron] Python not found, installing...");
-  const install = await runInSandbox(sandbox, "apt-get", [
+async function installDeps(sandbox: Sandbox): Promise<void> {
+  // Install pip via apt-get (the sandbox has Python but not pip)
+  console.log("[cron] Installing python3-pip via apt-get...");
+  const aptUpdate = await runInSandbox(sandbox, "sudo", [
+    "apt-get",
     "update",
     "-qq",
   ]);
-  if (install.code !== 0) {
-    throw new Error(`Failed to update apt: ${install.stderr}`);
+  if (aptUpdate.code !== 0) {
+    throw new Error(`apt-get update failed: ${aptUpdate.stderr}`);
   }
 
-  const installPy = await runInSandbox(sandbox, "apt-get", [
+  const aptInstall = await runInSandbox(sandbox, "sudo", [
+    "apt-get",
     "install",
     "-y",
     "-qq",
-    "python3",
     "python3-pip",
   ]);
-  if (installPy.code !== 0) {
-    throw new Error(`Failed to install Python: ${installPy.stderr}`);
+  if (aptInstall.code !== 0) {
+    throw new Error(`apt-get install failed: ${aptInstall.stderr}`);
   }
 
-  console.log("[cron] Python installed successfully");
+  // Install nba_api via pip
+  console.log("[cron] Installing nba_api via pip...");
+  const pipResult = await runInSandbox(sandbox, "sudo", [
+    "python3",
+    "-m",
+    "pip",
+    "install",
+    "--break-system-packages",
+    "nba_api",
+  ]);
+  if (pipResult.code !== 0) {
+    throw new Error(
+      `pip install failed: ${pipResult.stderr}\n${pipResult.stdout}`,
+    );
+  }
 }
 
-/**
- * Daily NBA stats update cron job
- *
- * Runs at 10:00 AM UTC (5:00 AM Eastern) — after NBA games finish
- * for the night so stats are fresh.
- *
- * Steps:
- * 1. Spin up a sandbox (Linux microVM)
- * 2. Install Python + nba_api inside it
- * 3. Upload and run fetch_nba_stats.py
- * 4. Read the output JSON
- * 5. Merge stats into KV using the shared merge function
- */
 // Deno.cron is only available on Deno Deploy and when running with --unstable-cron.
 // In Vite dev mode, Deno.cron doesn't exist, so we skip registration.
 if (typeof Deno.cron === "function") {
-  Deno.cron("update nba stats", "* * * * *", {
+  Deno.cron("update nba stats", "0 10,22 * * *", {
     backoffSchedule: [60_000, 300_000, 900_000],
   }, async () => {
     const startTime = Date.now();
     console.log("[cron] === NBA STATS UPDATE STARTING ===");
 
     try {
-      // Step 1: Create sandbox
+      // Step 1: Create sandbox (use snapshot if available for faster startup)
       console.log("[cron] Step 1/6: Creating sandbox...");
-      await using sandbox = await Sandbox.create();
+      const snapshot = await Snapshot.get(SNAPSHOT_SLUG);
+      let needsInstall = true;
+
+      if (snapshot) {
+        console.log(`[cron] Using snapshot "${SNAPSHOT_SLUG}"`);
+      } else {
+        console.log("[cron] No snapshot found, using fresh sandbox");
+      }
+
+      await using sandbox = await Sandbox.create(
+        snapshot ? { root: SNAPSHOT_SLUG } : undefined,
+      );
+      if (snapshot) needsInstall = false;
       console.log("[cron] Step 1/6: Sandbox created OK");
 
-      // Step 2: Make sure Python is available
+      // Step 2: Verify Python
       console.log("[cron] Step 2/6: Checking Python...");
-      await ensurePython(sandbox);
-      console.log("[cron] Step 2/6: Python ready OK");
-
-      // Step 3: Install the nba_api package
-      console.log("[cron] Step 3/6: Installing nba_api...");
-      const pipResult = await runInSandbox(sandbox, "pip", [
-        "install",
-        "nba_api",
-      ]);
-      if (pipResult.code !== 0) {
-        console.log(
-          `[cron] pip failed (code ${pipResult.code}), trying pip3...`,
-        );
-        console.log(`[cron] pip stderr: ${pipResult.stderr}`);
-        const pip3Result = await runInSandbox(sandbox, "pip3", [
-          "install",
-          "nba_api",
-        ]);
-        if (pip3Result.code !== 0) {
-          console.error(`[cron] pip3 stderr: ${pip3Result.stderr}`);
-          throw new Error(`Failed to install nba_api: ${pip3Result.stderr}`);
-        }
+      const pyCheck = await runInSandbox(sandbox, "python3", ["--version"]);
+      if (pyCheck.code !== 0) {
+        throw new Error("Python 3 not found in sandbox");
       }
-      console.log("[cron] Step 3/6: nba_api installed OK");
+      console.log(`[cron] Step 2/6: ${pyCheck.stdout.trim()} OK`);
+
+      // Step 3: Install deps if needed (skipped when using snapshot)
+      if (needsInstall) {
+        console.log("[cron] Step 3/6: Installing dependencies...");
+        await installDeps(sandbox);
+        console.log("[cron] Step 3/6: Dependencies installed OK");
+      } else {
+        console.log("[cron] Step 3/6: Dependencies in snapshot, skipping");
+      }
 
       // Step 4: Upload the Python script into the sandbox
       console.log("[cron] Step 4/6: Uploading Python script...");

@@ -14,7 +14,8 @@
     "check-kv": "deno run -A --unstable-kv scripts/check-kv.ts",
     "merge-stats": "deno run -A --unstable-kv scripts/merge-stats.ts",
     "merge-darko": "deno run -A --unstable-kv scripts/merge-darko.ts",
-    "update-stats": "bash scripts/update-stats.sh"
+    "update-stats": "bash scripts/update-stats.sh",
+    "test-sandbox": "deno run -A --unstable-kv scripts/test-sandbox.ts"
   },
   "lint": {
     "rules": {
@@ -29,6 +30,7 @@
   ],
   "imports": {
     "@/": "./",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.6",
     "fresh": "jsr:@fresh/core@^2.2.0",
     "preact": "npm:preact@^10.27.2",
     "preact/hooks": "npm:preact@^10.27.2/hooks",
