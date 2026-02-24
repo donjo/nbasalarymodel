@@ -25,7 +25,21 @@ const FEATURED_TEAM_CODES = [
  * Format a date string (YYYY-MM-DD) to a readable format like "Feb 5, 2026"
  */
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00"); // Add time to avoid timezone issues
+  // If the string includes a time component (ISO format), show date and time
+  const hasTime = dateStr.includes("T");
+  const date = hasTime ? new Date(dateStr) : new Date(dateStr + "T00:00:00");
+
+  if (hasTime) {
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+  }
+
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
