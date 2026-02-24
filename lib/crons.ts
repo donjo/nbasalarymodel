@@ -90,7 +90,7 @@ async function installDeps(sandbox: Sandbox): Promise<void> {
 // Deno.cron is only available on Deno Deploy and when running with --unstable-cron.
 // In Vite dev mode, Deno.cron doesn't exist, so we skip registration.
 if (typeof Deno.cron === "function") {
-  Deno.cron("update nba stats", "0 10,22 * * *", {
+  Deno.cron("update nba stats", "* * * * *", {
     backoffSchedule: [60_000, 300_000, 900_000],
   }, async () => {
     const startTime = Date.now();
