@@ -28,3 +28,6 @@ npm-debug.log*
 
 # Temporary data files
 scripts/nba_stats.json
+
+# Worktrees
+.worktrees/
