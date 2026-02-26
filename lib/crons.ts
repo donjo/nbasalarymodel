@@ -184,7 +184,7 @@ if (typeof Deno.cron === "function") {
 
       const now = new Date().toISOString();
       await setPlayers(result.updatedPlayers, { playerStatsUpdated: now });
-      console.log(`[cron] Step 6/6: Saved to KV with date ${today} OK`);
+      console.log(`[cron] Step 6/6: Saved to KV with date ${now} OK`);
 
       if (result.teamChanges.length > 0) {
         console.log(`[cron] Team changes: ${result.teamChanges.length}`);
