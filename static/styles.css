@@ -1206,9 +1206,17 @@ body::before {
   overflow: hidden;
 }
 
+.leaderboard-table--negative {
+  border-top-color: var(--surplus-negative);
+}
+
+.leaderboard-table--positive {
+  border-top-color: var(--surplus-positive);
+}
+
 .leaderboard-table-header {
   background: var(--bg-elevated);
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -1216,13 +1224,16 @@ body::before {
   font-family: var(--font-display);
   font-size: 1.25rem;
   letter-spacing: 0.05em;
+  line-height: 1;
   color: var(--text-primary);
   margin: 0;
 }
 
 .leaderboard-table-subtitle {
+  display: block;
   font-size: 0.75rem;
   color: var(--text-muted);
+  margin-top: 0.3rem;
 }
 
 .leaderboard-table-body {

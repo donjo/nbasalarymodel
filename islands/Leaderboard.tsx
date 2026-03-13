@@ -113,10 +113,10 @@ export default function Leaderboard({ players }: Props) {
     <div class="leaderboard-container">
       <div class="leaderboard-grid">
         {/* Most Overvalued Players */}
-        <div class="leaderboard-table">
+        <div class="leaderboard-table leaderboard-table--negative">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Overvalued Players</h3>
-            <span class="leaderboard-table-subtitle">Highest negative surplus</span>
+            <span class="leaderboard-table-subtitle">These players are paid more than their on-court production justifies</span>
           </div>
           <div class="leaderboard-table-body">
             {mostOvervalued.map((item, index) => (
@@ -139,10 +139,10 @@ export default function Leaderboard({ players }: Props) {
         </div>
 
         {/* Most Undervalued Players */}
-        <div class="leaderboard-table">
+        <div class="leaderboard-table leaderboard-table--positive">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Undervalued Players</h3>
-            <span class="leaderboard-table-subtitle">Highest positive surplus</span>
+            <span class="leaderboard-table-subtitle">These players are outperforming their contracts — a good deal for their teams</span>
           </div>
           <div class="leaderboard-table-body">
             {mostUndervalued.map((item, index) => (
@@ -165,10 +165,10 @@ export default function Leaderboard({ players }: Props) {
         </div>
 
         {/* Most Overvalued Teams */}
-        <div class="leaderboard-table">
+        <div class="leaderboard-table leaderboard-table--negative">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Overvalued Teams</h3>
-            <span class="leaderboard-table-subtitle">Highest negative total surplus</span>
+            <span class="leaderboard-table-subtitle">These rosters cost more than their combined production is worth</span>
           </div>
           <div class="leaderboard-table-body">
             {mostOvervaluedTeams.map((item, index) => (
@@ -191,10 +191,10 @@ export default function Leaderboard({ players }: Props) {
         </div>
 
         {/* Most Undervalued Teams */}
-        <div class="leaderboard-table">
+        <div class="leaderboard-table leaderboard-table--positive">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Undervalued Teams</h3>
-            <span class="leaderboard-table-subtitle">Highest positive total surplus</span>
+            <span class="leaderboard-table-subtitle">These rosters are outperforming their total payroll as a unit</span>
           </div>
           <div class="leaderboard-table-body">
             {mostUndervaluedTeams.map((item, index) => (
