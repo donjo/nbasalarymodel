@@ -84,10 +84,14 @@ export async function getPlayers(): Promise<PlayersResult> {
     }
   }
 
-  // If we got players from KV, use them
+  // If we got players from KV, use them (deduplicate by name, keeping last occurrence)
   if (players.length > 0) {
+    const seen = new Map<string, Player>();
+    for (const player of players) {
+      seen.set(player.name, player);
+    }
     return {
-      players,
+      players: Array.from(seen.values()),
       metadata: metadataEntry.value,
     };
   }
