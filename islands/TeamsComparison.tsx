@@ -437,7 +437,7 @@ function ExpandedPlayerView(
 
   // Calculate projected value with current slider values
   const projected = calculateSalary(games, minutes, player.darko, improvement);
-  const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
+  const projValNum = projected === "Minimum Salary" ? 2.0 : parseFloat(projected);
   const history = darkoHistory[normalizeName(player.name)] ?? [];
   const trend = getDarkoTrendSummary(history, player.darko);
   const risk = getContractRiskSummary(player, projValNum, history);
@@ -472,7 +472,7 @@ function ExpandedPlayerView(
 
     if (rawMarketValue === "Minimum Salary") {
       projectedMarketValueLabel = "MIN";
-      inflatedValueNum = 0;
+      inflatedValueNum = 2.0 * (INFLATION_SCALERS[seasonLabel] || 1);
     } else {
       inflatedValueNum = parseFloat(rawMarketValue) *
         (INFLATION_SCALERS[seasonLabel] || 1);

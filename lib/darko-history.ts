@@ -78,6 +78,7 @@ export async function getDarkoHistoryMap(): Promise<
 
   for (const key of Object.keys(historyMap)) {
     historyMap[key].sort((a, b) => a.date.localeCompare(b.date));
+    historyMap[key] = historyMap[key].slice(-10);
   }
 
   return historyMap;

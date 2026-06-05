@@ -174,7 +174,7 @@ This model makes improvements on an older one I built in a couple of different
 ways. First, there is an aging curve built in, along with inflation baked in for
 future years from salary cap increases (estimates taken from RealGM).
 
-This model also tries to sovle for the problem that Parntnow writes about, that
+This model also tries to solve for the problem that Partnow writes about, that
 "valuing wins can be tricky, as not all wins are created equal."
 
 Getting from 60 to 65 wins is a lot more valuable than going from 20 to 25. MVP
@@ -185,7 +185,7 @@ for MVP-caliber players and deducts 10 percent for replacement-level players.
 
 There are a few improvements which I hope to make to this model down the line,
 the primary one being a positional adjustment that penalizes small
-guards/centers and rewards wings. I would like to build in some sort of pidgeon
+guards/centers and rewards wings. I would like to build in some sort of pigeon
 component (how often a player gets targeted, which has been tracked by Todd
 Whitehead using synergy data) to devalue those defensively-limited players.
 Along the same lines, my aging curve could be improved by making it
