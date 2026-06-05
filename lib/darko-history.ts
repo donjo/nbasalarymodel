@@ -78,6 +78,7 @@ export async function getDarkoHistoryMap(): Promise<
 
   for (const key of Object.keys(historyMap)) {
     historyMap[key].sort((a, b) => a.date.localeCompare(b.date));
+    // Cap to the 10 most recent entries to keep payload size bounded as CSVs accumulate.
     historyMap[key] = historyMap[key].slice(-10);
   }
 
