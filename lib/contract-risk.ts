@@ -66,8 +66,8 @@ export function getContractRiskSummary(
     player.age >= 30 ? "Older profile" : "Younger profile",
     trendDelta < -0.2 ? "DARKO trend is sliding" : "DARKO trend is stable",
     surplus < 0
-      ? "Value is above current salary"
-      : "Value is aligned with salary",
+      ? "Salary is above model value"
+      : "Model value is above salary",
   ].join(" · ");
 
   return { score, label, reason };
