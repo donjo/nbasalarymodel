@@ -16,7 +16,7 @@
 
 import { getPlayers, setPlayers } from "../lib/players-data.ts";
 import { NICKNAME_MAP, normalizeName } from "../lib/name-utils.ts";
-import { parse } from "jsr:@std/csv";
+import { parse } from "jsr:@std/csv@1.0.6";
 import type { Player } from "../lib/types.ts";
 
 /**
@@ -44,7 +44,9 @@ async function findLatestDarkoCsv(): Promise<DarkoCsvResult | null> {
     for await (const entry of Deno.readDir(darkoDir)) {
       // Look for files matching the DARKO filename pattern
       // Pattern: DARKO_player_talent_YYYY-MM-DD.csv
-      const match = entry.name.match(/DARKO_player_talent_(\d{4}-\d{2}-\d{2})\.csv/);
+      const match = entry.name.match(
+        /DARKO_player_talent_(\d{4}-\d{2}-\d{2})\.csv/,
+      );
 
       if (match) {
         const dateStr = match[1]; // e.g., "2026-02-05"
@@ -133,10 +135,10 @@ async function updateMetadataFile(darkoDate: string) {
 
   // Extract current values using regex
   const playerStatsMatch = currentContent.match(
-    /PLAYER_STATS_UPDATED = "([^"]+)"/
+    /PLAYER_STATS_UPDATED = "([^"]+)"/,
   );
   const salaryModelMatch = currentContent.match(
-    /SALARY_MODEL_UPDATED = "([^"]+)"/
+    /SALARY_MODEL_UPDATED = "([^"]+)"/,
   );
 
   const playerStatsDate = playerStatsMatch?.[1] ?? "2026-01-21";
@@ -219,7 +221,10 @@ async function main() {
     "SurplusValue",
   ];
 
-  const records = parse(csvText, { skipFirstRow: true, columns }) as Record<string, string>[];
+  const records = parse(csvText, { skipFirstRow: true, columns }) as Record<
+    string,
+    string
+  >[];
   console.log(`   Found ${records.length} players in CSV`);
 
   // 3. Build lookup map by normalized player name
@@ -308,8 +313,12 @@ async function main() {
     console.log("   Notable changes:");
     for (const change of sortedChanges) {
       const direction = change.diff > 0 ? "↑" : "↓";
-      const diffStr = change.diff > 0 ? `+${change.diff.toFixed(2)}` : change.diff.toFixed(2);
-      console.log(`     ${change.name}: ${change.oldDarko} → ${change.newDarko} (${direction} ${diffStr})`);
+      const diffStr = change.diff > 0
+        ? `+${change.diff.toFixed(2)}`
+        : change.diff.toFixed(2);
+      console.log(
+        `     ${change.name}: ${change.oldDarko} → ${change.newDarko} (${direction} ${diffStr})`,
+      );
     }
   }
 

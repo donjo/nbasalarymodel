@@ -68,7 +68,5 @@ export function getUniqueTeamCodes(): string[] {
     }
   }
 
-  return uniqueCodes.sort((a, b) =>
-    TEAM_NAMES[a].localeCompare(TEAM_NAMES[b])
-  );
+  return uniqueCodes.sort((a, b) => TEAM_NAMES[a].localeCompare(TEAM_NAMES[b]));
 }

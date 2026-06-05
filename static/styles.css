@@ -1,6 +1,6 @@
 /* NBA Salary Model - Sports Analytics Editorial Design */
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   /* Core palette */
@@ -16,10 +16,10 @@
   --text-on-accent: #ffffff;
 
   /* NBA Brand Colors */
-  --nba-blue: #17408B;
+  --nba-blue: #17408b;
   --nba-blue-light: #1d4ed8;
   --nba-blue-glow: rgba(23, 64, 139, 0.2);
-  --nba-red: #C9082A;
+  --nba-red: #c9082a;
   --nba-red-light: #ef4444;
   --nba-red-glow: rgba(201, 8, 42, 0.15);
 
@@ -43,9 +43,9 @@
   --border-medium: rgba(255, 255, 255, 0.1);
 
   /* Fonts */
-  --font-display: 'Bebas Neue', sans-serif;
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 * {
@@ -63,14 +63,18 @@ body {
 
 /* Subtle court-line background pattern */
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 8, 42, 0.08), transparent),
+    radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(201, 8, 42, 0.08),
+      transparent
+    ),
     linear-gradient(180deg, transparent 0%, var(--bg-primary) 100%);
   pointer-events: none;
   z-index: -1;
@@ -117,7 +121,11 @@ body::before {
 
 /* Header styling */
 .app-header {
-  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--bg-card) 0%,
+    var(--bg-secondary) 100%
+  );
   border: 1px solid var(--border-subtle);
   border-radius: 1rem;
   padding: 2rem 2rem 1rem 2rem;
@@ -127,7 +135,7 @@ body::before {
 }
 
 .app-header::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -142,7 +150,11 @@ body::before {
   letter-spacing: 0.05em;
   line-height: 1;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--text-secondary) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -606,6 +618,78 @@ body::before {
   color: var(--surplus-negative);
 }
 
+.risk-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.mini-card {
+  background: linear-gradient(
+    135deg,
+    rgba(23, 64, 139, 0.12),
+    rgba(255, 255, 255, 0.02)
+  );
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+
+.mini-card-label {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.mini-card-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.mini-card-meta {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.history-row:last-child {
+  border-bottom: none;
+}
+
+.text-warning {
+  color: #fbbf24;
+}
+
+@media (max-width: 640px) {
+  .risk-trend-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Multi-year projections */
 .projections-section {
   border-top: 1px solid var(--border-subtle);
@@ -745,9 +829,15 @@ body::before {
 
 /* Animation for values */
 @keyframes valueFlash {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .value-updating {
@@ -866,8 +956,7 @@ body::before {
   color: var(--value-blue);
 }
 
-.roster-table {
-}
+.roster-table {}
 
 .roster-row {
   display: grid;

@@ -6,19 +6,25 @@
 import { useState } from "preact/hooks";
 import { PlusIcon, TrashIcon } from "../components/Icons.tsx";
 import type { Player } from "../lib/players.ts";
+import type { DarkoHistoryPoint } from "../lib/darko-history.ts";
 import { getTeamFullName } from "../lib/teams.ts";
 import {
   calculateSalary,
-  getDarkoLabel,
-  getAgingDelta,
-  INFLATION_SCALERS,
   FUTURE_YEARS,
+  getAgingDelta,
+  getDarkoLabel,
+  INFLATION_SCALERS,
 } from "../lib/salary.ts";
 import {
-  type PlayerSettings,
   DEFAULT_GAMES,
   getPlayerDefaults,
+  type PlayerSettings,
 } from "../lib/url.ts";
+import { normalizeName } from "../lib/name-utils.ts";
+import {
+  getContractRiskSummary,
+  getDarkoTrendSummary,
+} from "../lib/contract-risk.ts";
 
 interface Props {
   players: Player[];
@@ -28,6 +34,7 @@ interface Props {
   onTeamRemoved: (code: string) => void;
   teamPlayerSettings: Map<string, PlayerSettings>;
   onTeamPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
 // Format salary as currency (e.g., "$25.5M")
@@ -39,7 +46,12 @@ function formatSalary(salary: number): string {
 function getProjectedValue(player: Player, settings?: PlayerSettings): number {
   const resolved = getPlayerDefaults(player, settings);
 
-  const result = calculateSalary(resolved.games, resolved.minutes, player.darko, resolved.improvement);
+  const result = calculateSalary(
+    resolved.games,
+    resolved.minutes,
+    player.darko,
+    resolved.improvement,
+  );
   // "Minimum Salary" returns as a string, treat as ~2M for calculation purposes
   if (result === "Minimum Salary") return 2.0;
   return parseFloat(result);
@@ -53,6 +65,7 @@ export default function TeamsComparison({
   onTeamRemoved,
   teamPlayerSettings,
   onTeamPlayerSettingsChange,
+  darkoHistory = {},
 }: Props) {
   // Selected teams - derived from addedTeamCodes
   const selectedTeams = [...addedTeamCodes];
@@ -76,7 +89,10 @@ export default function TeamsComparison({
   // Calculate total projected value for a team
   const getTeamTotalValue = (teamCode: string): number => {
     const roster = getTeamRoster(teamCode);
-    return roster.reduce((total, player) => total + getProjectedValue(player), 0);
+    return roster.reduce(
+      (total, player) => total + getProjectedValue(player),
+      0,
+    );
   };
 
   // Add a team to the comparison
@@ -91,7 +107,7 @@ export default function TeamsComparison({
 
   // Filter out featured teams that are already selected
   const availableFeatured = featuredTeamCodes.filter(
-    (code) => !addedTeamCodes.has(code)
+    (code) => !addedTeamCodes.has(code),
   );
 
   // Check if we're in comparison mode (at least one team selected)
@@ -111,6 +127,7 @@ export default function TeamsComparison({
               onRemove={() => removeTeam(teamCode)}
               playerSettings={teamPlayerSettings}
               onPlayerSettingsChange={onTeamPlayerSettingsChange}
+              darkoHistory={darkoHistory}
             />
           ))}
         </div>
@@ -150,12 +167,19 @@ interface TeamPreviewCardProps {
   onAdd: () => void;
 }
 
-function TeamPreviewCard({ teamCode, totalPayroll, totalValue, onAdd }: TeamPreviewCardProps) {
+function TeamPreviewCard(
+  { teamCode, totalPayroll, totalValue, onAdd }: TeamPreviewCardProps,
+) {
   const surplus = totalValue - totalPayroll;
 
   return (
     <div class="preview-card">
-      <button onClick={onAdd} class="preview-add-btn" title="Add to comparison">
+      <button
+        type="button"
+        onClick={onAdd}
+        class="preview-add-btn"
+        title="Add to comparison"
+      >
         <PlusIcon size={14} />
         Add
       </button>
@@ -181,7 +205,8 @@ function TeamPreviewCard({ teamCode, totalPayroll, totalValue, onAdd }: TeamPrev
               surplus >= 0 ? "surplus-positive" : "surplus-negative"
             }`}
           >
-            {surplus >= 0 ? "+" : ""}{formatSalary(surplus)}
+            {surplus >= 0 ? "+" : ""}
+            {formatSalary(surplus)}
           </span>
         </div>
       </div>
@@ -199,6 +224,7 @@ interface TeamCardProps {
   onRemove: () => void;
   playerSettings: Map<string, PlayerSettings>;
   onPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
 function TeamCard({
@@ -208,6 +234,7 @@ function TeamCard({
   onRemove,
   playerSettings,
   onPlayerSettingsChange,
+  darkoHistory = {},
 }: TeamCardProps) {
   // Sort state - default to salary (highest first)
   const [sortBy, setSortBy] = useState<SortField>("salary");
@@ -228,7 +255,7 @@ function TeamCard({
   // Calculate total projected value and surplus for the team (using custom settings)
   const totalValue = roster.reduce(
     (sum, player) => sum + getProjectedValue(player, getSettings(player)),
-    0
+    0,
   );
   const totalSurplus = totalValue - totalPayroll;
 
@@ -261,7 +288,7 @@ function TeamCard({
       {/* Header with team name and remove button */}
       <div class="player-card-header">
         <h2 class="player-card-title">{getTeamFullName(teamCode)}</h2>
-        <button onClick={onRemove} class="remove-btn">
+        <button type="button" onClick={onRemove} class="remove-btn">
           <TrashIcon size={16} />
         </button>
       </div>
@@ -274,12 +301,19 @@ function TeamCard({
         </div>
         <div class="team-stat">
           <span class="team-stat-label">Total Value</span>
-          <span class="team-stat-value team-stat-value-blue">{formatSalary(totalValue)}</span>
+          <span class="team-stat-value team-stat-value-blue">
+            {formatSalary(totalValue)}
+          </span>
         </div>
         <div class="team-stat">
           <span class="team-stat-label">Surplus</span>
-          <span class={`team-stat-value ${totalSurplus >= 0 ? "surplus-positive" : "surplus-negative"}`}>
-            {totalSurplus >= 0 ? "+" : ""}{formatSalary(totalSurplus)}
+          <span
+            class={`team-stat-value ${
+              totalSurplus >= 0 ? "surplus-positive" : "surplus-negative"
+            }`}
+          >
+            {totalSurplus >= 0 ? "+" : ""}
+            {formatSalary(totalSurplus)}
           </span>
         </div>
       </div>
@@ -289,18 +323,21 @@ function TeamCard({
         <div class="roster-header">
           <span>Player</span>
           <button
+            type="button"
             class={`roster-header-btn ${sortBy === "salary" ? "active" : ""}`}
             onClick={() => setSortBy("salary")}
           >
             Salary {sortBy === "salary" && "▼"}
           </button>
           <button
+            type="button"
             class={`roster-header-btn ${sortBy === "value" ? "active" : ""}`}
             onClick={() => setSortBy("value")}
           >
             Value {sortBy === "value" && "▼"}
           </button>
           <button
+            type="button"
             class={`roster-header-btn ${sortBy === "surplus" ? "active" : ""}`}
             onClick={() => setSortBy("surplus")}
           >
@@ -318,28 +355,53 @@ function TeamCard({
             return (
               <div key={player.name}>
                 <div
-                  class={`roster-row ${isExpanded ? "roster-row-expanded" : ""}`}
+                  class={`roster-row ${
+                    isExpanded ? "roster-row-expanded" : ""
+                  }`}
                   onClick={() => togglePlayer(player.name)}
                 >
                   <span class="roster-player-name roster-player-clickable">
-                    <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span> {player.name}
-                    <span class={`roster-player-settings ${settings.games !== (player.projectedGames ?? DEFAULT_GAMES) || settings.minutes !== (player.avgMinutes ?? 0) ? "roster-player-settings-modified" : ""}`}>
+                    <span class="roster-arrow">{isExpanded ? "▼" : "▶"}</span>
+                    {" "}
+                    {player.name}
+                    <span
+                      class={`roster-player-settings ${
+                        settings.games !==
+                            (player.projectedGames ?? DEFAULT_GAMES) ||
+                          settings.minutes !== (player.avgMinutes ?? 0)
+                          ? "roster-player-settings-modified"
+                          : ""
+                      }`}
+                    >
                       G — {settings.games} · MP — {settings.minutes}
                     </span>
                   </span>
-                  <span class="roster-salary">{formatSalary(player.actualSalary)}</span>
-                  <span class={`roster-value ${isPositive ? "surplus-positive" : "surplus-negative"}`}>
+                  <span class="roster-salary">
+                    {formatSalary(player.actualSalary)}
+                  </span>
+                  <span
+                    class={`roster-value ${
+                      isPositive ? "surplus-positive" : "surplus-negative"
+                    }`}
+                  >
                     {formatSalary(projectedValue)}
                   </span>
-                  <span class={`roster-surplus ${isPositive ? "surplus-positive" : "surplus-negative"}`}>
-                    {isPositive ? "+" : ""}{formatSalary(surplus)}
+                  <span
+                    class={`roster-surplus ${
+                      isPositive ? "surplus-positive" : "surplus-negative"
+                    }`}
+                  >
+                    {isPositive ? "+" : ""}
+                    {formatSalary(surplus)}
                   </span>
                 </div>
                 {isExpanded && (
                   <ExpandedPlayerView
                     player={player}
                     settings={settings}
-                    onSettingsChange={(newSettings) => updateSettings(player.name, newSettings)}
+                    onSettingsChange={(newSettings) =>
+                      updateSettings(player.name, newSettings)}
+                    darkoHistory={darkoHistory}
                   />
                 )}
               </div>
@@ -359,9 +421,13 @@ interface ExpandedPlayerViewProps {
   player: Player;
   settings: PlayerSettings;
   onSettingsChange: (settings: PlayerSettings) => void;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
-function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlayerViewProps) {
+function ExpandedPlayerView(
+  { player, settings, onSettingsChange, darkoHistory = {} }:
+    ExpandedPlayerViewProps,
+) {
   const { games, minutes, improvement } = settings;
 
   // Helper to update a single setting
@@ -372,6 +438,9 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
   // Calculate projected value with current slider values
   const projected = calculateSalary(games, minutes, player.darko, improvement);
   const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
+  const history = darkoHistory[normalizeName(player.name)] ?? [];
+  const trend = getDarkoTrendSummary(history, player.darko);
+  const risk = getContractRiskSummary(player, projValNum, history);
 
   let currentSurplus = 0;
   if (player.actualSalary) {
@@ -391,7 +460,12 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
     }
 
     const currentProjectedDarko = player.darko + improvement + cumulativeDelta;
-    const rawMarketValue = calculateSalary(games, minutes, currentProjectedDarko, 0);
+    const rawMarketValue = calculateSalary(
+      games,
+      minutes,
+      currentProjectedDarko,
+      0,
+    );
 
     let inflatedValueNum = 0;
     let projectedMarketValueLabel: string;
@@ -400,12 +474,15 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
       projectedMarketValueLabel = "MIN";
       inflatedValueNum = 0;
     } else {
-      inflatedValueNum = parseFloat(rawMarketValue) * (INFLATION_SCALERS[seasonLabel] || 1);
+      inflatedValueNum = parseFloat(rawMarketValue) *
+        (INFLATION_SCALERS[seasonLabel] || 1);
       projectedMarketValueLabel = `$${inflatedValueNum.toFixed(1)}M`;
     }
 
     const actualFutureSal = player.futureSalaries?.[seasonLabel];
-    const yearlySurplus = actualFutureSal ? inflatedValueNum - actualFutureSal : 0;
+    const yearlySurplus = actualFutureSal
+      ? inflatedValueNum - actualFutureSal
+      : 0;
     if (actualFutureSal) runningTotalSurplus += yearlySurplus;
 
     return {
@@ -434,7 +511,11 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
           min="1"
           max="82"
           value={games}
-          onInput={(e) => updateSetting("games", parseInt((e.target as HTMLInputElement).value))}
+          onInput={(e) =>
+            updateSetting(
+              "games",
+              parseInt((e.target as HTMLInputElement).value),
+            )}
           class="slider"
         />
       </div>
@@ -449,7 +530,11 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
           min="0"
           max="48"
           value={minutes}
-          onInput={(e) => updateSetting("minutes", parseInt((e.target as HTMLInputElement).value))}
+          onInput={(e) =>
+            updateSetting(
+              "minutes",
+              parseInt((e.target as HTMLInputElement).value),
+            )}
           class="slider"
         />
       </div>
@@ -458,7 +543,8 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
         <div class="slider-label">
           <span>DARKO Adjustment</span>
           <span class="slider-value">
-            {improvement > 0 ? "+" : ""}{improvement.toFixed(1)}
+            {improvement > 0 ? "+" : ""}
+            {improvement.toFixed(1)}
           </span>
         </div>
         <input
@@ -467,7 +553,11 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
           max="5"
           step="0.1"
           value={improvement}
-          onInput={(e) => updateSetting("improvement", parseFloat((e.target as HTMLInputElement).value))}
+          onInput={(e) =>
+            updateSetting(
+              "improvement",
+              parseFloat((e.target as HTMLInputElement).value),
+            )}
           class="slider"
         />
         <div class="darko-info">
@@ -482,7 +572,9 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
             <span class="darko-label">Adjusted DARKO</span>
             <span class="darko-value" style={{ color: "#60a5fa" }}>
               {(player.darko + improvement).toFixed(1)}
-              <span class="darko-tier">({getDarkoLabel(player.darko + improvement)})</span>
+              <span class="darko-tier">
+                ({getDarkoLabel(player.darko + improvement)})
+              </span>
             </span>
           </div>
         </div>
@@ -501,21 +593,72 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
           <div class="result-block">
             <div class="result-label">Actual Salary '25-26</div>
             <div class="result-value result-value-actual">
-              {player.actualSalary && player.actualSalary > 0 ? (
-                `$${player.actualSalary.toFixed(1)}M`
-              ) : (
-                <span class="free-agent-badge">FREE AGENT</span>
-              )}
+              {player.actualSalary && player.actualSalary > 0
+                ? (
+                  `$${player.actualSalary.toFixed(1)}M`
+                )
+                : <span class="free-agent-badge">FREE AGENT</span>}
             </div>
             {player.actualSalary && (
-              <div class={`result-surplus ${currentSurplus > 0 ? "surplus-positive" : "surplus-negative"}`}>
-                {currentSurplus > 0 ? "+" : ""}{currentSurplus.toFixed(1)}M surplus
+              <div
+                class={`result-surplus ${
+                  currentSurplus > 0 ? "surplus-positive" : "surplus-negative"
+                }`}
+              >
+                {currentSurplus > 0 ? "+" : ""}
+                {currentSurplus.toFixed(1)}M surplus
               </div>
             )}
           </div>
         </div>
 
         {/* Multi-year projections */}
+        <div class="risk-trend-grid">
+          <div class="mini-card">
+            <span class="mini-card-label">DARKO trend</span>
+            <strong
+              class={`mini-card-value ${
+                trend.direction === "up"
+                  ? "surplus-positive"
+                  : trend.direction === "down"
+                  ? "surplus-negative"
+                  : ""
+              }`}
+            >
+              {trend.change >= 0 ? "+" : ""}
+              {trend.change.toFixed(1)}
+            </strong>
+            <span class="mini-card-meta">
+              Latest {trend.latestDarko.toFixed(1)} on {trend.latestDate} ·{" "}
+              {history.length} snapshot(s)
+            </span>
+          </div>
+          <div class="mini-card">
+            <span class="mini-card-label">Contract risk</span>
+            <strong
+              class={`mini-card-value ${
+                risk.label === "High"
+                  ? "surplus-negative"
+                  : risk.label === "Medium"
+                  ? "text-warning"
+                  : "surplus-positive"
+              }`}
+            >
+              {risk.label} ({risk.score})
+            </strong>
+            <span class="mini-card-meta">{risk.reason}</span>
+          </div>
+        </div>
+
+        <div class="history-list">
+          {history.slice(-3).map((entry) => (
+            <div key={`${entry.date}-${entry.darko}`} class="history-row">
+              <span>{entry.date}</span>
+              <strong>{entry.darko.toFixed(2)}</strong>
+            </div>
+          ))}
+        </div>
+
         <div class="projections-section">
           <h3 class="projections-title">MULTI-YEAR PROJECTIONS</h3>
           <div class="projections-header">
@@ -531,14 +674,25 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
                   {row.seasonLabel}
                   <span class="projection-age">({row.projectedAge})</span>
                 </span>
-                <span class="projection-value">{row.projectedMarketValueLabel}</span>
-                <span class="projection-actual">
-                  {row.actualFutureSal ? `$${Number(row.actualFutureSal).toFixed(1)}M` : "FA"}
+                <span class="projection-value">
+                  {row.projectedMarketValueLabel}
                 </span>
-                <span class={`projection-surplus ${row.yearlySurplus > 0 ? "surplus-positive" : "surplus-negative"}`}>
+                <span class="projection-actual">
+                  {row.actualFutureSal
+                    ? `$${Number(row.actualFutureSal).toFixed(1)}M`
+                    : "FA"}
+                </span>
+                <span
+                  class={`projection-surplus ${
+                    row.yearlySurplus > 0
+                      ? "surplus-positive"
+                      : "surplus-negative"
+                  }`}
+                >
                   {row.actualFutureSal && (
                     <>
-                      {row.yearlySurplus > 0 ? "+" : ""}{row.yearlySurplus.toFixed(1)}M
+                      {row.yearlySurplus > 0 ? "+" : ""}
+                      {row.yearlySurplus.toFixed(1)}M
                     </>
                   )}
                 </span>
@@ -548,8 +702,15 @@ function ExpandedPlayerView({ player, settings, onSettingsChange }: ExpandedPlay
 
           <div class="total-surplus">
             <span class="total-surplus-label">Total Contract Surplus</span>
-            <span class={`total-surplus-value ${runningTotalSurplus > 0 ? "surplus-positive" : "surplus-negative"}`}>
-              {runningTotalSurplus > 0 ? "+" : ""}{runningTotalSurplus.toFixed(1)}M
+            <span
+              class={`total-surplus-value ${
+                runningTotalSurplus > 0
+                  ? "surplus-positive"
+                  : "surplus-negative"
+              }`}
+            >
+              {runningTotalSurplus > 0 ? "+" : ""}
+              {runningTotalSurplus.toFixed(1)}M
             </span>
           </div>
         </div>
