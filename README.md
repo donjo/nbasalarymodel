@@ -1,6 +1,6 @@
 # nbasalarymodel
 
-> Originally created by [Stephen Noh](https://github.com/StephenNoh/nbasalarymodel). This is a personal fork with modifications.
+> Originally created by [Stephen Noh](https://github.com/StephenNoh/nbasalarymodel). This is a personal fork with modifications to the viusual style and with additional features added.
 
 ## Getting Started
 
