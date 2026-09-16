@@ -1,4 +1,5 @@
 import AppTabs from "../islands/AppTabs.tsx";
+import { getDarkoHistoryMap } from "../lib/darko-history.ts";
 import { getPlayers } from "../lib/players-data.ts";
 
 // Featured players for the empty state (diverse examples showing different valuations)
@@ -56,6 +57,7 @@ function formatDate(dateStr: string): string {
 export default async function Home() {
   // Fetch players from KV (falls back to hardcoded data if KV is empty)
   const { players, metadata } = await getPlayers();
+  const darkoHistory = await getDarkoHistoryMap();
 
   // Get featured players from the player data
   const featuredPlayers = players.filter((p) =>
@@ -68,7 +70,7 @@ export default async function Home() {
       <header class="app-header">
         <h1 class="app-title">NBA SALARY VALUATION</h1>
         <p class="app-meta">
-          Salary model by{" "}
+          Salary model by
           <a
             href="https://bsky.app/profile/stephnoh.bsky.social"
             target="_blank"
@@ -77,7 +79,7 @@ export default async function Home() {
           >
             Steph Noh
           </a>
-          {" · "}Based on{" "}
+          · Based on
           <a
             href="https://apanalytics.shinyapps.io/DARKO/"
             target="_blank"
@@ -86,7 +88,7 @@ export default async function Home() {
           >
             DARKO
           </a>
-          {" · "}
+          ·
           <a
             href="https://github.com/StephenNoh/nbasalarymodel/blob/main/README.md"
             target="_blank"
@@ -99,8 +101,7 @@ export default async function Home() {
         <p class="app-meta app-dates">
           {metadata.darkoUpdated && (
             <>
-              DARKO updated{" "}
-              <strong>{formatDate(metadata.darkoUpdated)}</strong>
+              DARKO updated <strong>{formatDate(metadata.darkoUpdated)}</strong>
             </>
           )}
           {metadata.darkoUpdated && metadata.playerStatsUpdated && (
@@ -132,6 +133,7 @@ export default async function Home() {
         players={players}
         featuredPlayers={featuredPlayers}
         featuredTeamCodes={FEATURED_TEAM_CODES}
+        darkoHistory={darkoHistory}
       />
     </div>
   );

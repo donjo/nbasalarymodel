@@ -23,9 +23,10 @@ export const NICKNAME_MAP: Record<string, string> = {
  * Reverse mapping: legal names to nicknames
  * Built automatically from NICKNAME_MAP so users can search either direction
  */
-export const LEGAL_NAME_TO_NICKNAME: Record<string, string> = Object.fromEntries(
-  Object.entries(NICKNAME_MAP).map(([nickname, legal]) => [legal, nickname])
-);
+export const LEGAL_NAME_TO_NICKNAME: Record<string, string> = Object
+  .fromEntries(
+    Object.entries(NICKNAME_MAP).map(([nickname, legal]) => [legal, nickname]),
+  );
 
 /**
  * Normalize a player name for matching/comparison
@@ -62,7 +63,7 @@ export function normalizeName(name: string): string {
  */
 export function playerNameMatchesSearch(
   playerName: string,
-  searchTerm: string
+  searchTerm: string,
 ): boolean {
   const normalizedPlayer = normalizeName(playerName);
   const normalizedSearch = normalizeName(searchTerm);
@@ -75,15 +76,21 @@ export function playerNameMatchesSearch(
   // Check if searching by nickname that maps to this player's legal name
   // e.g., searching "Bones" should find "Nah'Shon Hyland"
   for (const [nickname, legalName] of Object.entries(NICKNAME_MAP)) {
-    if (nickname.includes(normalizedSearch) && normalizedPlayer.includes(legalName)) {
+    if (
+      nickname.includes(normalizedSearch) &&
+      normalizedPlayer.includes(legalName)
+    ) {
       return true;
     }
   }
 
   // Check if searching by legal name for a player known by nickname
   // e.g., searching "Nahshon" should also work
-  for (const [nickname, legalName] of Object.entries(NICKNAME_MAP)) {
-    if (legalName.includes(normalizedSearch) && normalizedPlayer.includes(legalName)) {
+  for (const [, legalName] of Object.entries(NICKNAME_MAP)) {
+    if (
+      legalName.includes(normalizedSearch) &&
+      normalizedPlayer.includes(legalName)
+    ) {
       return true;
     }
   }

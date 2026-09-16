@@ -12,7 +12,7 @@
 export const DARKO_UPDATED = "2026-03-13";
 
 /** Date when player stats were last synced from NBA API (YYYY-MM-DD format) */
-export const PLAYER_STATS_UPDATED = "2026-02-08";
+export const PLAYER_STATS_UPDATED = "2026-06-05";
 
 /** Date when the salary model data was last updated */
 export const SALARY_MODEL_UPDATED = "2026-01-21";

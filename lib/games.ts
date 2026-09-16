@@ -47,7 +47,9 @@ export const HEALTHY_THRESHOLD = 5;
  */
 export function calculateSeasonProgress(allGamesPlayed: number[]): number {
   // Filter out undefined/null values and find the maximum
-  const validGames = allGamesPlayed.filter((g) => g !== undefined && g !== null);
+  const validGames = allGamesPlayed.filter((g) =>
+    g !== undefined && g !== null
+  );
   if (validGames.length === 0) return 1;
   return Math.max(...validGames, 1);
 }
@@ -79,7 +81,7 @@ const HEALTHY_FORWARD_RATE = 0.9;
 export function calculateProjectedGames(
   gamesPlayed: number,
   seasonProgress: number,
-  recentGamesPlayed?: number
+  recentGamesPlayed?: number,
 ): number {
   // Handle edge cases
   if (seasonProgress <= 0) return TOTAL_SEASON_GAMES;
@@ -87,11 +89,13 @@ export function calculateProjectedGames(
 
   // Standard projection: use season-long participation rate
   const participationRate = gamesPlayed / seasonProgress;
-  const seasonRateProjection = Math.round(participationRate * TOTAL_SEASON_GAMES);
+  const seasonRateProjection = Math.round(
+    participationRate * TOTAL_SEASON_GAMES,
+  );
 
   // Check if player is "currently healthy" (played most recent games)
-  const isCurrentlyHealthy =
-    recentGamesPlayed !== undefined && recentGamesPlayed >= HEALTHY_THRESHOLD;
+  const isCurrentlyHealthy = recentGamesPlayed !== undefined &&
+    recentGamesPlayed >= HEALTHY_THRESHOLD;
 
   if (isCurrentlyHealthy) {
     // Optimistic projection: assume they play 90% of remaining games

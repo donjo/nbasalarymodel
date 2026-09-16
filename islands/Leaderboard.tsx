@@ -25,11 +25,13 @@ function calculatePlayerSurplus(player: Player): number {
     defaults.games,
     defaults.minutes,
     player.darko,
-    defaults.improvement
+    defaults.improvement,
   );
 
   // Handle "Minimum Salary" case - assume minimum is ~$2M
-  const projectedValue = projected === "Minimum Salary" ? 2.0 : parseFloat(projected);
+  const projectedValue = projected === "Minimum Salary"
+    ? 2.0
+    : parseFloat(projected);
   return projectedValue - player.actualSalary;
 }
 
@@ -73,7 +75,10 @@ export default function Leaderboard({ players }: Props) {
 
   // Calculate team totals by grouping ALL paid players (including those with 0 games)
   // Use the full team name to handle alternate codes (BKN/BRK, CHO/CHA)
-  const teamSurplusMap = new Map<string, { code: string; totalSurplus: number; playerCount: number }>();
+  const teamSurplusMap = new Map<
+    string,
+    { code: string; totalSurplus: number; playerCount: number }
+  >();
 
   allPaidPlayers.forEach(({ player, surplus }) => {
     const fullName = getTeamFullName(player.team);
@@ -96,7 +101,7 @@ export default function Leaderboard({ players }: Props) {
       code: data.code,
       totalSurplus: data.totalSurplus,
       playerCount: data.playerCount,
-    })
+    }),
   );
 
   // Most overvalued teams (most negative total surplus)
@@ -116,7 +121,10 @@ export default function Leaderboard({ players }: Props) {
         <div class="leaderboard-table leaderboard-table--negative">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Overvalued Players</h3>
-            <span class="leaderboard-table-subtitle">These players are paid more than their on-court production justifies</span>
+            <span class="leaderboard-table-subtitle">
+              These players are paid more than their on-court production
+              justifies
+            </span>
           </div>
           <div class="leaderboard-table-body">
             {mostOvervalued.map((item, index) => (
@@ -130,7 +138,11 @@ export default function Leaderboard({ players }: Props) {
                   <span class="leaderboard-name">{item.player.name}</span>
                   <span class="leaderboard-team">{item.player.team}</span>
                 </div>
-                <span class={`leaderboard-surplus ${item.surplus >= 0 ? "surplus-positive" : "surplus-negative"}`}>
+                <span
+                  class={`leaderboard-surplus ${
+                    item.surplus >= 0 ? "surplus-positive" : "surplus-negative"
+                  }`}
+                >
                   {formatSurplus(item.surplus)}
                 </span>
               </a>
@@ -142,7 +154,10 @@ export default function Leaderboard({ players }: Props) {
         <div class="leaderboard-table leaderboard-table--positive">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Undervalued Players</h3>
-            <span class="leaderboard-table-subtitle">These players are outperforming their contracts — a good deal for their teams</span>
+            <span class="leaderboard-table-subtitle">
+              These players are outperforming their contracts — a good deal for
+              their teams
+            </span>
           </div>
           <div class="leaderboard-table-body">
             {mostUndervalued.map((item, index) => (
@@ -156,7 +171,11 @@ export default function Leaderboard({ players }: Props) {
                   <span class="leaderboard-name">{item.player.name}</span>
                   <span class="leaderboard-team">{item.player.team}</span>
                 </div>
-                <span class={`leaderboard-surplus ${item.surplus >= 0 ? "surplus-positive" : "surplus-negative"}`}>
+                <span
+                  class={`leaderboard-surplus ${
+                    item.surplus >= 0 ? "surplus-positive" : "surplus-negative"
+                  }`}
+                >
                   {formatSurplus(item.surplus)}
                 </span>
               </a>
@@ -168,7 +187,9 @@ export default function Leaderboard({ players }: Props) {
         <div class="leaderboard-table leaderboard-table--negative">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Overvalued Teams</h3>
-            <span class="leaderboard-table-subtitle">These rosters cost more than their combined production is worth</span>
+            <span class="leaderboard-table-subtitle">
+              These rosters cost more than their combined production is worth
+            </span>
           </div>
           <div class="leaderboard-table-body">
             {mostOvervaluedTeams.map((item, index) => (
@@ -182,7 +203,13 @@ export default function Leaderboard({ players }: Props) {
                   <span class="leaderboard-name">{item.name}</span>
                   <span class="leaderboard-team">{item.code}</span>
                 </div>
-                <span class={`leaderboard-surplus ${item.totalSurplus >= 0 ? "surplus-positive" : "surplus-negative"}`}>
+                <span
+                  class={`leaderboard-surplus ${
+                    item.totalSurplus >= 0
+                      ? "surplus-positive"
+                      : "surplus-negative"
+                  }`}
+                >
                   {formatSurplus(item.totalSurplus)}
                 </span>
               </a>
@@ -194,7 +221,9 @@ export default function Leaderboard({ players }: Props) {
         <div class="leaderboard-table leaderboard-table--positive">
           <div class="leaderboard-table-header">
             <h3 class="leaderboard-table-title">Most Undervalued Teams</h3>
-            <span class="leaderboard-table-subtitle">These rosters are outperforming their total payroll as a unit</span>
+            <span class="leaderboard-table-subtitle">
+              These rosters are outperforming their total payroll as a unit
+            </span>
           </div>
           <div class="leaderboard-table-body">
             {mostUndervaluedTeams.map((item, index) => (
@@ -208,7 +237,13 @@ export default function Leaderboard({ players }: Props) {
                   <span class="leaderboard-name">{item.name}</span>
                   <span class="leaderboard-team">{item.code}</span>
                 </div>
-                <span class={`leaderboard-surplus ${item.totalSurplus >= 0 ? "surplus-positive" : "surplus-negative"}`}>
+                <span
+                  class={`leaderboard-surplus ${
+                    item.totalSurplus >= 0
+                      ? "surplus-positive"
+                      : "surplus-negative"
+                  }`}
+                >
                   {formatSurplus(item.totalSurplus)}
                 </span>
               </a>

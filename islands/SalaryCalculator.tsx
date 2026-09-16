@@ -5,17 +5,20 @@
 
 import { PlusIcon, TrashIcon } from "../components/Icons.tsx";
 import type { Player } from "../lib/players.ts";
+import type { DarkoHistoryPoint } from "../lib/darko-history.ts";
 import {
-  getDarkoLabel,
   calculateSalary,
-  getAgingDelta,
-  INFLATION_SCALERS,
   FUTURE_YEARS,
+  getAgingDelta,
+  getDarkoLabel,
+  INFLATION_SCALERS,
 } from "../lib/salary.ts";
+import { normalizeName } from "../lib/name-utils.ts";
 import {
-  type PlayerSettings,
-  getPlayerDefaults,
-} from "../lib/url.ts";
+  getContractRiskSummary,
+  getDarkoTrendSummary,
+} from "../lib/contract-risk.ts";
+import { getPlayerDefaults, type PlayerSettings } from "../lib/url.ts";
 
 interface Props {
   players: Player[];
@@ -24,6 +27,7 @@ interface Props {
   onPlayerAdded: (name: string) => void;
   onPlayerRemoved: (name: string) => void;
   onPlayerSettingsChange: (name: string, settings: PlayerSettings) => void;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
 export default function SalaryCalculator({
@@ -33,6 +37,7 @@ export default function SalaryCalculator({
   onPlayerAdded,
   onPlayerRemoved,
   onPlayerSettingsChange,
+  darkoHistory = {},
 }: Props) {
   // Build player cards from selections Map
   const playerCards = Array.from(playerSelections.entries())
@@ -41,7 +46,9 @@ export default function SalaryCalculator({
       if (!player) return null;
       return { player, settings };
     })
-    .filter((card): card is { player: Player; settings: PlayerSettings } => card !== null);
+    .filter((card): card is { player: Player; settings: PlayerSettings } =>
+      card !== null
+    );
 
   const addPlayer = (player: Player) => {
     onPlayerAdded(player.name);
@@ -54,18 +61,21 @@ export default function SalaryCalculator({
   const updatePlayerSettings = (
     playerName: string,
     field: keyof PlayerSettings,
-    value: number
+    value: number,
   ) => {
     const currentSettings = playerSelections.get(playerName);
     if (currentSettings) {
-      onPlayerSettingsChange(playerName, { ...currentSettings, [field]: value });
+      onPlayerSettingsChange(playerName, {
+        ...currentSettings,
+        [field]: value,
+      });
     }
   };
 
   // Filter out featured players that are already added
   const addedPlayerNames = new Set(playerSelections.keys());
   const availableFeatured = featuredPlayers.filter(
-    (p) => !addedPlayerNames.has(p.name)
+    (p) => !addedPlayerNames.has(p.name),
   );
 
   // Check if we're in comparison mode (at least one player added)
@@ -82,7 +92,9 @@ export default function SalaryCalculator({
               player={player}
               settings={settings}
               onRemove={() => removePlayer(player.name)}
-              onUpdate={(field, value) => updatePlayerSettings(player.name, field, value)}
+              onUpdate={(field, value) =>
+                updatePlayerSettings(player.name, field, value)}
+              darkoHistory={darkoHistory}
             />
           ))}
         </div>
@@ -125,16 +137,23 @@ function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
     defaults.games,
     defaults.minutes,
     player.darko,
-    defaults.improvement
+    defaults.improvement,
   );
-  const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
+  const projValNum = projected === "Minimum Salary" ? 2.0 : parseFloat(projected);
 
   // Calculate surplus
-  const surplus = player.actualSalary > 0 ? projValNum - player.actualSalary : 0;
+  const surplus = player.actualSalary > 0
+    ? projValNum - player.actualSalary
+    : 0;
 
   return (
     <div class="preview-card">
-      <button onClick={onAdd} class="preview-add-btn" title="Add to comparison">
+      <button
+        type="button"
+        onClick={onAdd}
+        class="preview-add-btn"
+        title="Add to comparison"
+      >
         <PlusIcon size={14} />
         Add
       </button>
@@ -148,7 +167,9 @@ function PlayerPreviewCard({ player, onAdd }: PlayerPreviewCardProps) {
         <div class="preview-stat">
           <span class="preview-stat-label">Actual Salary</span>
           <span class="preview-stat-value">
-            {player.actualSalary > 0 ? `$${player.actualSalary.toFixed(1)}M` : "FA"}
+            {player.actualSalary > 0
+              ? `$${player.actualSalary.toFixed(1)}M`
+              : "FA"}
           </span>
         </div>
         <div class="preview-stat">
@@ -179,6 +200,7 @@ interface PlayerCardComponentProps {
   settings: PlayerSettings;
   onRemove: () => void;
   onUpdate: (field: keyof PlayerSettings, value: number) => void;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
 function PlayerCardComponent({
@@ -186,20 +208,27 @@ function PlayerCardComponent({
   settings,
   onRemove,
   onUpdate,
+  darkoHistory = {},
 }: PlayerCardComponentProps) {
   return (
     <div class="player-card">
       <div class="player-card-header">
         <div class="player-card-title-row">
           <h2 class="player-card-title">{player.name}</h2>
-          <span class="player-card-meta-inline">{player.team} · {player.age}</span>
+          <span class="player-card-meta-inline">
+            {player.team} · {player.age}
+          </span>
         </div>
-        <button onClick={onRemove} class="remove-btn">
+        <button type="button" onClick={onRemove} class="remove-btn">
           <TrashIcon size={16} />
         </button>
       </div>
 
-      <ResultsPanel player={player} settings={settings} />
+      <ResultsPanel
+        player={player}
+        settings={settings}
+        darkoHistory={darkoHistory}
+      />
 
       <div class="adjustments-section">
         <div class="slider-group">
@@ -213,8 +242,7 @@ function PlayerCardComponent({
             max="82"
             value={settings.games}
             onInput={(e) =>
-              onUpdate("games", parseInt((e.target as HTMLInputElement).value))
-            }
+              onUpdate("games", parseInt((e.target as HTMLInputElement).value))}
             class="slider"
           />
         </div>
@@ -230,8 +258,10 @@ function PlayerCardComponent({
             max="48"
             value={settings.minutes}
             onInput={(e) =>
-              onUpdate("minutes", parseInt((e.target as HTMLInputElement).value))
-            }
+              onUpdate(
+                "minutes",
+                parseInt((e.target as HTMLInputElement).value),
+              )}
             class="slider"
           />
         </div>
@@ -253,15 +283,17 @@ function PlayerCardComponent({
             onInput={(e) =>
               onUpdate(
                 "improvement",
-                parseFloat((e.target as HTMLInputElement).value)
-              )
-            }
+                parseFloat((e.target as HTMLInputElement).value),
+              )}
             class="slider"
           />
           <div class="darko-info">
             <div class="darko-row">
               <span class="darko-label">Actual DARKO</span>
-              <span class="darko-value" style={{ color: "var(--text-primary)" }}>
+              <span
+                class="darko-value"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {player.darko.toFixed(1)}
                 <span class="darko-tier">({getDarkoLabel(player.darko)})</span>
               </span>
@@ -285,16 +317,22 @@ function PlayerCardComponent({
 interface ResultsPanelProps {
   player: Player;
   settings: PlayerSettings;
+  darkoHistory?: Record<string, DarkoHistoryPoint[]>;
 }
 
-function ResultsPanel({ player, settings }: ResultsPanelProps) {
+function ResultsPanel(
+  { player, settings, darkoHistory = {} }: ResultsPanelProps,
+) {
   const projected = calculateSalary(
     settings.games,
     settings.minutes,
     player.darko,
-    settings.improvement
+    settings.improvement,
   );
-  const projValNum = projected === "Minimum Salary" ? 0 : parseFloat(projected);
+  const projValNum = projected === "Minimum Salary" ? 2.0 : parseFloat(projected);
+  const history = darkoHistory[normalizeName(player.name)] ?? [];
+  const trend = getDarkoTrendSummary(history, player.darko);
+  const risk = getContractRiskSummary(player, projValNum, history);
 
   let currentSurplus = 0;
   if (player.actualSalary) {
@@ -312,13 +350,13 @@ function ResultsPanel({ player, settings }: ResultsPanelProps) {
       cumulativeDelta += getAgingDelta(player.age + i);
     }
 
-    const currentProjectedDarko =
-      player.darko + settings.improvement + cumulativeDelta;
+    const currentProjectedDarko = player.darko + settings.improvement +
+      cumulativeDelta;
     const rawMarketValue = calculateSalary(
       settings.games,
       settings.minutes,
       currentProjectedDarko,
-      0
+      0,
     );
 
     let inflatedValueNum = 0;
@@ -326,10 +364,10 @@ function ResultsPanel({ player, settings }: ResultsPanelProps) {
 
     if (rawMarketValue === "Minimum Salary") {
       projectedMarketValueLabel = "MIN";
-      inflatedValueNum = 0;
+      inflatedValueNum = 2.0 * (INFLATION_SCALERS[seasonLabel] || 1);
     } else {
-      inflatedValueNum =
-        parseFloat(rawMarketValue) * (INFLATION_SCALERS[seasonLabel] || 1);
+      inflatedValueNum = parseFloat(rawMarketValue) *
+        (INFLATION_SCALERS[seasonLabel] || 1);
       projectedMarketValueLabel = `$${inflatedValueNum.toFixed(1)}M`;
     }
 
@@ -361,11 +399,11 @@ function ResultsPanel({ player, settings }: ResultsPanelProps) {
         <div class="result-block">
           <div class="result-label">Actual Salary '25-26</div>
           <div class="result-value result-value-actual">
-            {player.actualSalary && player.actualSalary > 0 ? (
-              `$${player.actualSalary.toFixed(1)}M`
-            ) : (
-              <span class="free-agent-badge">FREE AGENT</span>
-            )}
+            {player.actualSalary && player.actualSalary > 0
+              ? (
+                `$${player.actualSalary.toFixed(1)}M`
+              )
+              : <span class="free-agent-badge">FREE AGENT</span>}
           </div>
           {player.actualSalary && (
             <div
@@ -378,6 +416,52 @@ function ResultsPanel({ player, settings }: ResultsPanelProps) {
             </div>
           )}
         </div>
+      </div>
+
+      <div class="risk-trend-grid">
+        <div class="mini-card">
+          <span class="mini-card-label">DARKO trend</span>
+          <strong
+            class={`mini-card-value ${
+              trend.direction === "up"
+                ? "surplus-positive"
+                : trend.direction === "down"
+                ? "surplus-negative"
+                : ""
+            }`}
+          >
+            {trend.change >= 0 ? "+" : ""}
+            {trend.change.toFixed(1)}
+          </strong>
+          <span class="mini-card-meta">
+            Latest {trend.latestDarko.toFixed(1)} on {trend.latestDate} ·{" "}
+            {history.length} snapshot(s)
+          </span>
+        </div>
+        <div class="mini-card">
+          <span class="mini-card-label">Contract risk</span>
+          <strong
+            class={`mini-card-value ${
+              risk.label === "High"
+                ? "surplus-negative"
+                : risk.label === "Medium"
+                ? "text-warning"
+                : "surplus-positive"
+            }`}
+          >
+            {risk.label} ({risk.score})
+          </strong>
+          <span class="mini-card-meta">{risk.reason}</span>
+        </div>
+      </div>
+
+      <div class="history-list">
+        {history.slice(-3).map((entry) => (
+          <div key={`${entry.date}-${entry.darko}`} class="history-row">
+            <span>{entry.date}</span>
+            <strong>{entry.darko.toFixed(2)}</strong>
+          </div>
+        ))}
       </div>
 
       <div class="projections-section">
@@ -405,7 +489,9 @@ function ResultsPanel({ player, settings }: ResultsPanelProps) {
               </span>
               <span
                 class={`projection-surplus ${
-                  row.yearlySurplus > 0 ? "surplus-positive" : "surplus-negative"
+                  row.yearlySurplus > 0
+                    ? "surplus-positive"
+                    : "surplus-negative"
                 }`}
               >
                 {row.actualFutureSal && (

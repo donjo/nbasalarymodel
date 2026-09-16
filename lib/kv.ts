@@ -29,7 +29,10 @@ export async function getKv(): Promise<Deno.Kv | null> {
       return kvInstance;
     }
   } catch (error) {
-    console.warn("Deno KV not available, falling back to hardcoded data:", error);
+    console.warn(
+      "Deno KV not available, falling back to hardcoded data:",
+      error,
+    );
   }
 
   return null;

@@ -16,7 +16,9 @@ const kv = await getKv();
 
 if (!kv) {
   console.log("❌ Deno KV is not available.");
-  console.log("   Make sure to run with: deno run -A --unstable-kv scripts/check-kv.ts");
+  console.log(
+    "   Make sure to run with: deno run -A --unstable-kv scripts/check-kv.ts",
+  );
   Deno.exit(1);
 }
 
@@ -33,10 +35,14 @@ if (metadataEntry.value) {
     console.log(`   DARKO Updated: ${metadataEntry.value.darkoUpdated}`);
   }
   if (metadataEntry.value.playerStatsUpdated) {
-    console.log(`   Player Stats Updated: ${metadataEntry.value.playerStatsUpdated}`);
+    console.log(
+      `   Player Stats Updated: ${metadataEntry.value.playerStatsUpdated}`,
+    );
   }
   if (metadataEntry.value.salaryModelUpdated) {
-    console.log(`   Salary Model Updated: ${metadataEntry.value.salaryModelUpdated}`);
+    console.log(
+      `   Salary Model Updated: ${metadataEntry.value.salaryModelUpdated}`,
+    );
   }
 } else {
   console.log("📋 Metadata: (not found)");

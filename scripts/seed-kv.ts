@@ -19,6 +19,8 @@ try {
   console.log("   Run 'deno task check-kv' to verify the data.");
 } catch (error) {
   console.error("❌ Failed to seed KV:", error);
-  console.log("   Make sure to run with: deno run -A --unstable-kv scripts/seed-kv.ts");
+  console.log(
+    "   Make sure to run with: deno run -A --unstable-kv scripts/seed-kv.ts",
+  );
   Deno.exit(1);
 }

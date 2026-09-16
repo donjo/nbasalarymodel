@@ -23,7 +23,7 @@ export function calculateSalary(
   games: number,
   minutes: number,
   darko: number,
-  adjustment: number
+  adjustment: number,
 ): string {
   const adjustedDarko = darko + adjustment;
   let salary = ((games * minutes) / 1475) * (adjustedDarko + 3.0) * 4.32;

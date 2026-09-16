@@ -4,17 +4,18 @@
  * Manages shareable URL state for player/team selections
  */
 
-import { useState, useEffect, useRef } from "preact/hooks";
-import { SearchIcon, PlusIcon } from "../components/Icons.tsx";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { PlusIcon, SearchIcon } from "../components/Icons.tsx";
 import SalaryCalculator from "./SalaryCalculator.tsx";
 import TeamsComparison from "./TeamsComparison.tsx";
 import Leaderboard from "./Leaderboard.tsx";
 import type { Player } from "../lib/players.ts";
+import type { DarkoHistoryPoint } from "../lib/darko-history.ts";
 import { getTeamFullName, getUniqueTeamCodes } from "../lib/teams.ts";
 import { playerNameMatchesSearch } from "../lib/name-utils.ts";
 import {
-  encodeStateToURL,
   decodeURLToState,
+  encodeStateToURL,
   getDefaultSettings,
   type PlayerSettings,
 } from "../lib/url.ts";
@@ -23,28 +24,36 @@ interface Props {
   players: Player[];
   featuredPlayers: Player[];
   featuredTeamCodes: string[];
+  darkoHistory: Record<string, DarkoHistoryPoint[]>;
 }
 
 export default function AppTabs({
   players,
   featuredPlayers,
   featuredTeamCodes,
+  darkoHistory,
 }: Props) {
   // Tab state - default to player view
-  const [activeTab, setActiveTab] = useState<"player" | "team" | "leaderboard">("player");
+  const [activeTab, setActiveTab] = useState<"player" | "team" | "leaderboard">(
+    "player",
+  );
 
   // Search state (unified for both tabs)
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
   // Player selections with their custom settings (name -> settings)
-  const [playerSelections, setPlayerSelections] = useState<Map<string, PlayerSettings>>(new Map());
+  const [playerSelections, setPlayerSelections] = useState<
+    Map<string, PlayerSettings>
+  >(new Map());
 
   // Team codes that have been added
   const [addedTeamCodes, setAddedTeamCodes] = useState<Set<string>>(new Set());
 
   // Team player custom settings (player name -> settings)
-  const [teamPlayerSettings, setTeamPlayerSettings] = useState<Map<string, PlayerSettings>>(new Map());
+  const [teamPlayerSettings, setTeamPlayerSettings] = useState<
+    Map<string, PlayerSettings>
+  >(new Map());
 
   // Track if we've loaded state from URL (to avoid overwriting on mount)
   const hasLoadedFromURL = useRef(false);
@@ -96,7 +105,7 @@ export default function AppTabs({
   }, [players]);
 
   // Update URL when state changes (debounced to avoid too many updates during slider drags)
-  const urlUpdateTimeout = useRef<number | null>(null);
+  const urlUpdateTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Skip if we haven't loaded from URL yet (initial mount)
@@ -119,7 +128,11 @@ export default function AppTabs({
       // Only update if URL would actually change
       const newSearch = urlString ? `?${urlString}` : "";
       if (globalThis.location?.search !== newSearch) {
-        globalThis.history?.replaceState(null, "", newSearch || globalThis.location?.pathname);
+        globalThis.history?.replaceState(
+          null,
+          "",
+          newSearch || globalThis.location?.pathname,
+        );
       }
     }, 300);
 
@@ -141,7 +154,7 @@ export default function AppTabs({
       .filter(
         (p) =>
           playerNameMatchesSearch(p.name, term) &&
-          !addedPlayerNames.has(p.name)
+          !addedPlayerNames.has(p.name),
       )
       .slice(0, 10);
   };
@@ -154,19 +167,27 @@ export default function AppTabs({
       .filter((code) => {
         if (addedTeamCodes.has(code)) return false;
         const fullName = getTeamFullName(code).toLowerCase();
-        return fullName.includes(lowerTerm) || code.toLowerCase().includes(lowerTerm);
+        return fullName.includes(lowerTerm) ||
+          code.toLowerCase().includes(lowerTerm);
       })
       .slice(0, 10);
   };
 
-  const filteredPlayers = activeTab === "player" ? getFilteredPlayers(searchTerm) : [];
-  const filteredTeams = activeTab === "team" ? getFilteredTeams(searchTerm) : [];
+  const filteredPlayers = activeTab === "player"
+    ? getFilteredPlayers(searchTerm)
+    : [];
+  const filteredTeams = activeTab === "team"
+    ? getFilteredTeams(searchTerm)
+    : [];
 
   // Callbacks to track added items (passed to child components)
   const handlePlayerAdded = (name: string) => {
     const player = players.find((p) => p.name === name);
     const newSelections = new Map(playerSelections);
-    newSelections.set(name, getDefaultSettings(player?.avgMinutes, player?.projectedGames));
+    newSelections.set(
+      name,
+      getDefaultSettings(player?.avgMinutes, player?.projectedGames),
+    );
     setPlayerSelections(newSelections);
     setSearchTerm("");
     setShowDropdown(false);
@@ -179,14 +200,20 @@ export default function AppTabs({
   };
 
   // Callback for when player settings change (from SalaryCalculator)
-  const handlePlayerSettingsChange = (name: string, settings: PlayerSettings) => {
+  const handlePlayerSettingsChange = (
+    name: string,
+    settings: PlayerSettings,
+  ) => {
     const newSelections = new Map(playerSelections);
     newSelections.set(name, settings);
     setPlayerSelections(newSelections);
   };
 
   // Callback for when team player settings change (from TeamsComparison)
-  const handleTeamPlayerSettingsChange = (name: string, settings: PlayerSettings) => {
+  const handleTeamPlayerSettingsChange = (
+    name: string,
+    settings: PlayerSettings,
+  ) => {
     const newSettings = new Map(teamPlayerSettings);
     newSettings.set(name, settings);
     setTeamPlayerSettings(newSettings);
@@ -220,7 +247,10 @@ export default function AppTabs({
         <div class="tab-nav-row">
           <div class="tab-navigation">
             <button
-              class={`tab-button ${activeTab === "player" ? "tab-button-active" : ""}`}
+              type="button"
+              class={`tab-button ${
+                activeTab === "player" ? "tab-button-active" : ""
+              }`}
               onClick={() => {
                 setActiveTab("player");
                 setSearchTerm("");
@@ -230,7 +260,10 @@ export default function AppTabs({
               Player
             </button>
             <button
-              class={`tab-button ${activeTab === "team" ? "tab-button-active" : ""}`}
+              type="button"
+              class={`tab-button ${
+                activeTab === "team" ? "tab-button-active" : ""
+              }`}
               onClick={() => {
                 setActiveTab("team");
                 setSearchTerm("");
@@ -240,7 +273,10 @@ export default function AppTabs({
               Team
             </button>
             <button
-              class={`tab-button ${activeTab === "leaderboard" ? "tab-button-active" : ""}`}
+              type="button"
+              class={`tab-button ${
+                activeTab === "leaderboard" ? "tab-button-active" : ""
+              }`}
               onClick={() => {
                 setActiveTab("leaderboard");
                 setSearchTerm("");
@@ -253,83 +289,97 @@ export default function AppTabs({
 
           {/* Search Box - hidden on leaderboard tab */}
           {activeTab !== "leaderboard" && (
-          <div class="nav-search-container">
-            <div class="search-input-wrapper">
-              <input
-                type="text"
-                value={searchTerm}
-                onInput={(e) => {
-                  setSearchTerm((e.target as HTMLInputElement).value);
-                  setShowDropdown(true);
-                }}
-                onFocus={() => setShowDropdown(true)}
-                placeholder={activeTab === "player" ? "Search players..." : "Search teams..."}
-                class="search-input"
-              />
-              <div class="search-icon">
-                <SearchIcon size={18} />
+            <div class="nav-search-container">
+              <div class="search-input-wrapper">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onInput={(e) => {
+                    setSearchTerm((e.target as HTMLInputElement).value);
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder={activeTab === "player"
+                    ? "Search players..."
+                    : "Search teams..."}
+                  class="search-input"
+                />
+                <div class="search-icon">
+                  <SearchIcon size={18} />
+                </div>
               </div>
-            </div>
 
-            {showDropdown && searchTerm && (
-              <div class="dropdown">
-                {activeTab === "player" && (
-                  <>
-                    {filteredPlayers.map((player) => (
-                      <div key={player.name} class="dropdown-item-with-button">
-                        <div class="dropdown-item-info">
-                          <div class="dropdown-item-name">{player.name}</div>
-                          <div class="dropdown-item-stat">
-                            DARKO: {player.darko.toFixed(2)} · {player.team}
+              {showDropdown && searchTerm && (
+                <div class="dropdown">
+                  {activeTab === "player" && (
+                    <>
+                      {filteredPlayers.map((player) => (
+                        <div
+                          key={player.name}
+                          class="dropdown-item-with-button"
+                        >
+                          <div class="dropdown-item-info">
+                            <div class="dropdown-item-name">{player.name}</div>
+                            <div class="dropdown-item-stat">
+                              DARKO: {player.darko.toFixed(2)} · {player.team}
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => handleAddPlayer(player)}
+                            class="dropdown-add-btn"
+                          >
+                            <PlusIcon size={16} />
+                            Add
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleAddPlayer(player)}
-                          class="dropdown-add-btn"
-                        >
-                          <PlusIcon size={16} />
-                          Add
-                        </button>
-                      </div>
-                    ))}
-                    {filteredPlayers.length === 0 && (
-                      <div class="dropdown-empty">
-                        {addedPlayerNames.has(searchTerm) ? "Player already added" : "No players found"}
-                      </div>
-                    )}
-                  </>
-                )}
-                {activeTab === "team" && (
-                  <>
-                    {filteredTeams.map((teamCode) => (
-                      <div key={teamCode} class="dropdown-item-with-button">
-                        <div class="dropdown-item-info">
-                          <div class="dropdown-item-name">{getTeamFullName(teamCode)}</div>
-                          <div class="dropdown-item-stat">{teamCode}</div>
+                      ))}
+                      {filteredPlayers.length === 0 && (
+                        <div class="dropdown-empty">
+                          {addedPlayerNames.has(searchTerm)
+                            ? "Player already added"
+                            : "No players found"}
                         </div>
-                        <button
-                          onClick={() => handleAddTeam(teamCode)}
-                          class="dropdown-add-btn"
-                        >
-                          <PlusIcon size={16} />
-                          Add
-                        </button>
-                      </div>
-                    ))}
-                    {filteredTeams.length === 0 && (
-                      <div class="dropdown-empty">
-                        {[...addedTeamCodes].some((code) =>
-                          getTeamFullName(code).toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                          ? "Team already added"
-                          : "No teams found"}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                      )}
+                    </>
+                  )}
+                  {activeTab === "team" && (
+                    <>
+                      {filteredTeams.map((teamCode) => (
+                        <div key={teamCode} class="dropdown-item-with-button">
+                          <div class="dropdown-item-info">
+                            <div class="dropdown-item-name">
+                              {getTeamFullName(teamCode)}
+                            </div>
+                            <div class="dropdown-item-stat">{teamCode}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleAddTeam(teamCode)}
+                            class="dropdown-add-btn"
+                          >
+                            <PlusIcon size={16} />
+                            Add
+                          </button>
+                        </div>
+                      ))}
+                      {filteredTeams.length === 0 && (
+                        <div class="dropdown-empty">
+                          {[...addedTeamCodes].some((code) =>
+                              getTeamFullName(code).toLowerCase().includes(
+                                searchTerm.toLowerCase(),
+                              )
+                            )
+                            ? "Team already added"
+                            : "No teams found"}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -343,6 +393,7 @@ export default function AppTabs({
           onPlayerAdded={handlePlayerAdded}
           onPlayerRemoved={handlePlayerRemoved}
           onPlayerSettingsChange={handlePlayerSettingsChange}
+          darkoHistory={darkoHistory}
         />
       )}
       {activeTab === "team" && (
@@ -354,11 +405,10 @@ export default function AppTabs({
           onTeamRemoved={handleTeamRemoved}
           teamPlayerSettings={teamPlayerSettings}
           onTeamPlayerSettingsChange={handleTeamPlayerSettingsChange}
+          darkoHistory={darkoHistory}
         />
       )}
-      {activeTab === "leaderboard" && (
-        <Leaderboard players={players} />
-      )}
+      {activeTab === "leaderboard" && <Leaderboard players={players} />}
     </>
   );
 }

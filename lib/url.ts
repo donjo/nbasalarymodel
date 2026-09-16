@@ -45,7 +45,9 @@ function hasCustomSettings(settings: PlayerSettings): boolean {
  * Encode a single player's settings to URL format: name:games:minutes:improvement
  */
 function encodePlayerSettings(name: string, settings: PlayerSettings): string {
-  return `${encodeURIComponent(name)}:${settings.games}:${settings.minutes}:${settings.improvement}`;
+  return `${
+    encodeURIComponent(name)
+  }:${settings.games}:${settings.minutes}:${settings.improvement}`;
 }
 
 /**
@@ -53,7 +55,7 @@ function encodePlayerSettings(name: string, settings: PlayerSettings): string {
  * Returns null if parsing fails
  */
 function decodePlayerSettings(
-  encoded: string
+  encoded: string,
 ): { name: string; settings: PlayerSettings } | null {
   const parts = encoded.split(":");
   if (parts.length !== 4) return null;
@@ -192,7 +194,10 @@ export function decodeURLToState(search: string): Partial<AppState> {
  * Uses player's projectedGames if available (falls back to DEFAULT_GAMES)
  * Uses player's actual avgMinutes if provided, otherwise 0
  */
-export function getDefaultSettings(avgMinutes?: number, projectedGames?: number): PlayerSettings {
+export function getDefaultSettings(
+  avgMinutes?: number,
+  projectedGames?: number,
+): PlayerSettings {
   return {
     games: projectedGames ?? DEFAULT_GAMES,
     minutes: avgMinutes ?? 0,

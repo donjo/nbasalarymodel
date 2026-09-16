@@ -130,12 +130,14 @@ interface SetPlayersOptions {
  */
 export async function setPlayers(
   players: Player[],
-  options: SetPlayersOptions = {}
+  options: SetPlayersOptions = {},
 ): Promise<void> {
   const kv = await getKv();
 
   if (!kv) {
-    throw new Error("Deno KV is not available. Make sure to run with --unstable-kv flag.");
+    throw new Error(
+      "Deno KV is not available. Make sure to run with --unstable-kv flag.",
+    );
   }
 
   // Get existing metadata to preserve fields we're not updating
@@ -161,8 +163,10 @@ export async function setPlayers(
     batchCount: batches.length,
     // Apply specific updates from options
     ...(options.darkoUpdated && { darkoUpdated: options.darkoUpdated }),
-    ...(options.playerStatsUpdated && { playerStatsUpdated: options.playerStatsUpdated }),
-    ...(options.salaryModelUpdated && { salaryModelUpdated: options.salaryModelUpdated }),
+    ...(options.playerStatsUpdated &&
+      { playerStatsUpdated: options.playerStatsUpdated }),
+    ...(options.salaryModelUpdated &&
+      { salaryModelUpdated: options.salaryModelUpdated }),
   };
 
   // Store each batch separately
